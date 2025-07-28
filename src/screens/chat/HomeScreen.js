@@ -1,4 +1,4 @@
-// src/screens/chat/HomeScreen.jsx
+// src/screens/chat/HomeScreen.js
 
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
@@ -34,7 +34,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('FavoriteList')} // ✅ 여기 수정됨
+          onPress={() => navigation.navigate('FavoriteList')}
         >
           <Text style={styles.buttonText}>좋아요</Text>
         </TouchableOpacity>
