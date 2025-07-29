@@ -27,24 +27,28 @@ const currentEnv = 'dev';
 // API 엔드포인트
 export const API_ENDPOINTS = { 
   auth: {
-    login: '/auth/login',
-    signup: '/auth/signup',
-    findId: '/auth/find-id',
-    findPassword: '/auth/find-password',
-    checkId: '/auth/check-id',
+    login: '/auth/login',                // 로그인
+    signup: '/auth/signup',              // 회원가입
+    findId: '/auth/find-id',             // 아이디 찾기
+    findPassword: '/auth/find-password', // 비밀번호 찾기
+    checkId: '/auth/check-id',           // 아이디 중복 확인
   },
   user: {
-    profile: '/users/me',
-    update: '/users/update',
+    profile: '/users/me',                // 내 프로필 정보 조회
+    update: '/users/update',             // 내 프로필 정보 수정
   },
   welfare: {
-    list: '/welfare/list',
-    detail: '/welfare/detail',
-    recommend: '/welfare/recommend',
+    like: '/welfare/likelist',               // 좋아요 복지 목록 조회(다시 지정 필요)
+    bookmarks: {
+      list: '/welfare/bookmarks',        // 북마크 목록 조회
+      add: '/welfare/bookmarks/add',     // 북마크 추가
+      remove: '/welfare/bookmarks/remove', // 북마크 삭제
+    },
   },
+  //chat 기능 엔드포인트 다시 지정 필요
   chat: {
-    send: '/chat/send',
-    history: '/chat/history',
+    send: '/chat/send',                  // 챗봇 메시지 전송
+    history: '/chat/history',            // 챗봇 대화 내역 조회
   }
 };
 
@@ -53,6 +57,7 @@ export const STORAGE_KEYS = {
   AUTH_TOKEN: 'authToken',
   USER_PROFILE: 'userProfile',
   SETTINGS: 'appSettings',
+  BOOKMARKS: 'user_bookmarks',
 };
 
 // CONFIG 객체 완성
