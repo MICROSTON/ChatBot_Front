@@ -1,0 +1,162 @@
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+
+export default function HomeScreen({ navigation, onShowGuide, onMount }) {
+  useEffect(() => {
+    if (onMount) onMount();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      {/* 헤더 */}
+      <View style={styles.headerRow}>
+        {/* 텍스트 대신 이미지 로고 사용 */}
+        <Image
+          source={require('../../../assets/images/SHChatbot.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <TouchableOpacity>
+          <Text style={styles.profile}>프로필</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.divider} />
+
+      {/* 상단에 가이드/대화하기/버튼 */}
+      <View style={styles.topArea}>
+        <TouchableOpacity style={styles.guideRow} onPress={onShowGuide}>
+          <Text style={styles.guideIcon}>ⓘ</Text>
+          <Text style={styles.guideText}>가이드</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.chatBox}
+          onPress={() => navigation.navigate('Chat')}
+        >
+          <Image
+            source={require('../../../assets/images/mascot.png')}
+            style={styles.avatar}
+          />
+          <Text style={styles.chatText}>대화 하기</Text>
+        </TouchableOpacity>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('FavoriteList')}
+          >
+            <Text style={styles.buttonText}>좋아요</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('Bookmark')}
+          >
+            <Text style={styles.buttonText}>즐겨찾기</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingHorizontal: 0,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 60,
+    marginBottom: 10,
+  },
+  logo: {
+    width: 190,
+    height: 40,
+    paddingHorizontal: 25,
+    paddingTop: 10,
+  },
+  divider: {
+    borderBottomColor: '#000',
+    borderBottomWidth: 1,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  topArea: {
+    alignItems: 'center',
+    marginTop: 0,
+  },
+  guideRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  guideIcon: {
+    fontSize: 18,
+    color: '#E3A772',
+    marginRight: 6,
+    marginTop: 100,
+  },
+  guideText: {
+    fontSize: 15,
+    color: '#333',
+    marginTop: 100,
+  },
+  chatBox: {
+    backgroundColor: '#55B7B5',
+    borderRadius: 24,
+    paddingVertical: 50,
+    alignItems: 'center',
+    width: 260,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#364144',
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    marginBottom: 10,
+    borderRadius: 50,
+    backgroundColor: '#fff',
+  },
+  chatText: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#222',
+    marginTop: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: 260,
+  },
+  button: {
+    flex: 0.48,
+    backgroundColor: '#55B7B5',
+    paddingVertical: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginHorizontal: 5,
+    borderWidth: 2,
+    borderColor: '#364144',
+  },
+  buttonText: {
+    fontSize: 16,
+    color: 'black',
+    fontWeight: '500',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3f9b9c',
+  },
+  profile: {
+    fontSize: 14,
+    color: '#888',
+    paddingHorizontal: 25,
+    paddingTop: 10,
+  },
+});
