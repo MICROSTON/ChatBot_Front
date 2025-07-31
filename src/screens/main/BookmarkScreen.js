@@ -218,7 +218,7 @@ const BookmarkScreen = ({ navigation }) => {
 
           <View style={styles.divider} />
 
-          {/* 알림 미리보기 - 서버 데이터로 렌더링 */}
+          {/* 알림 미리보기 - 서버 데이터로 렌더링 
           <View style={{ marginTop: 30 }}>
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#447473' }}>
               알림 미리보기
@@ -226,7 +226,7 @@ const BookmarkScreen = ({ navigation }) => {
             {notifications.map(noti => (
               <NotificationCard key={noti.id} message={noti.message} />
             ))}
-          </View>
+          </View>*/}
 
           {/* 챗봇 캐릭터와 안내 메시지 */}
           <View style={styles.instructionContainer}>
