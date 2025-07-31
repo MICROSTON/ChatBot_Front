@@ -34,8 +34,9 @@ export const API_ENDPOINTS = {
     checkId: '/auth/check-id',           // 아이디 중복 확인
   },
   user: {
-    profile: '/users/me',                // 내 프로필 정보 조회
-    update: '/users/update',             // 내 프로필 정보 수정
+    profile : "/user/me/{userNum}",
+    update : "/user/update/{userNum}",
+    withdraw : "/user/delete/{userNum}" ,
   },
   welfare: {
     like: '/welfare/likelist',               // 좋아요 복지 목록 조회(다시 지정 필요)
