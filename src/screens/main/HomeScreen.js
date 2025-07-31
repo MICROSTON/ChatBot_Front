@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
-export default function HomeScreen({ navigation, onShowGuide, onMount }) {
+export default function HomeScreen({ navigation,route, onShowGuide, onMount }) {
   useEffect(() => {
-    if (onMount) onMount();
-  }, []);
-
+    if (route.params?.showGuide === true  || route.params === undefined) {
+    onShowGuide();
+  }
+}, [route.params?.showGuide]);
   return (
     <View style={styles.container}>
       {/* 헤더 */}
@@ -16,8 +17,12 @@ export default function HomeScreen({ navigation, onShowGuide, onMount }) {
           style={styles.logo}
           resizeMode="contain"
         />
-        <TouchableOpacity>
-          <Text style={styles.profile}>프로필</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Image
+            source={require('../../../assets/icons/profile.png')} // 아이콘 파일 경로에 맞게 수정
+            style={ styles.profileIcon }
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </View>
       <View style={styles.divider} />
@@ -71,6 +76,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 60,
     marginBottom: 10,
+    paddingRight: 20, 
   },
   logo: {
     width: 190,
@@ -153,10 +159,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#3f9b9c',
   },
-  profile: {
-    fontSize: 14,
-    color: '#888',
-    paddingHorizontal: 25,
-    paddingTop: 10,
+  profileIcon: {
+    width: 27,
+    height: 27,
+    marginRight: 18,
+    marginTop: 10,
   },
 });

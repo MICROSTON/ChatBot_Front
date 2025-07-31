@@ -17,6 +17,8 @@ import HomeScreen from './src/screens/main/HomeScreen';
 import BookmarkScreen from './src/screens/main/BookmarkScreen';
 import NotificationScreen from './src/screens/main/NotificationScreen';
 import GuideScreen from './src/screens/onboarding/GuideScreen';
+import ProfileScreen from './src/screens/main/ProfileScreen';
+import EditProfileScreen from './src/screens/main/EditProfileScreen';
 
 const Stack = createStackNavigator();
 
@@ -85,6 +87,8 @@ export default function App() {
               </Stack.Screen>
               <Stack.Screen name="Bookmark" component={BookmarkScreen} />
               <Stack.Screen name="Notification" component={NotificationScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             </Stack.Navigator>
           </DismissKeyboard>
         </NavigationContainer>
