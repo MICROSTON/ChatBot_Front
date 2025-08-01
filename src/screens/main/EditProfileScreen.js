@@ -5,10 +5,11 @@ import { updateProfile } from '../../services/UserService';
 export default function EditProfileScreen({ navigation, route }) {
   const { profile, userNum } = route.params;
 
+  // 변수명 백엔드와 맞춤
   const [name, setName] = useState(profile.name || '');
   const [phone, setPhone] = useState(profile.phone || '');
-  const [birthdate, setBirthdate] = useState(profile.birthdate || '');
-  const [familySize, setFamilySize] = useState(profile.familySize || '');
+  const [birth, setBirth] = useState(profile.birth || '');
+  const [homeMember, setHomeMember] = useState(profile.homeMember || '');
   const [income, setIncome] = useState(profile.income || '');
   const [address, setAddress] = useState(profile.address || '');
 
@@ -132,8 +133,8 @@ export default function EditProfileScreen({ navigation, route }) {
     const updated = {
       name,
       phone,
-      birthdate,
-      familySize,
+      birth,
+      homeMember,
       income,
       address: `${province} ${city}`,
     };
@@ -157,22 +158,20 @@ export default function EditProfileScreen({ navigation, route }) {
         <View style={{ width: 24 }} />
       </View>
       <Text style={styles.inputLabel}>*이름</Text>
-      
       <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="이름" />
 
       <Text style={styles.inputLabel}>*전화번호</Text>
       <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="전화번호" keyboardType="phone-pad" />
 
       <Text style={styles.inputLabel}>*생년월일</Text>
-      <TextInput style={styles.input} value={birthdate} onChangeText={setBirthdate} placeholder="생년월일" />
-      
+      <TextInput style={styles.input} value={birth} onChangeText={setBirth} placeholder="생년월일" />
 
       {/* 가구원수 입력 */}
       <Text style={styles.label}>*가구원 수</Text>
       <TextInput
         style={styles.input}
-        value={familySize}
-        onChangeText={setFamilySize}
+        value={homeMember}
+        onChangeText={setHomeMember}
         placeholder="가구원 수를 입력하세요."
         keyboardType="numeric"
       />
@@ -243,6 +242,7 @@ export default function EditProfileScreen({ navigation, route }) {
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { 

@@ -5,27 +5,19 @@ import useAuth from '../../hooks/useAuth';
 
 const LoginScreen = ({ navigation }) => {
   const [id, setId] = useState('');
-  const [password, setPassword] = useState('');
+  const [pw, setPw] = useState('');
   const { login, isLoading } = useAuth();
 
-
   const handleLogin = async () => {
-    // 유효성 검사
-    if (!id.trim() || !password.trim()) {
+    if (!id.trim() || !pw.trim()) {
       Alert.alert('알림', '아이디와 비밀번호를 모두 입력해주세요.');
       return;
     }
-
-    const result = await login(id.trim(), password.trim());
-
-    
-      
+    const result = await login(id.trim(), pw.trim());
     if (result.success) {
       Alert.alert('성공', '로그인되었습니다.');
-      // 메인 화면으로 이동
       navigation.navigate('Home');
     } else {
-      // 로그인 실패
       Alert.alert('알림', result.message);
     }
   };
@@ -33,7 +25,6 @@ const LoginScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* 로고 이미지 */}
         <View style={styles.logoContainer}>
           <Image 
             source={require('../../../assets/images/logo.png')} 
@@ -41,10 +32,7 @@ const LoginScreen = ({ navigation }) => {
             resizeMode="contain"
           />
         </View>
-
-        {/* 로그인 폼 */}
         <View style={styles.formContainer}>
-          {/* 아이디 입력 필드와 찾기 버튼 */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <View style={styles.labelContainer}>
@@ -65,8 +53,6 @@ const LoginScreen = ({ navigation }) => {
               autoCapitalize="none"
             />
           </View>
-
-          {/* 비밀번호 입력 필드와 찾기 버튼 */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
               <View style={styles.labelContainer}>
@@ -81,14 +67,12 @@ const LoginScreen = ({ navigation }) => {
             <TextInput
               style={[styles.input, isLoading && styles.disabledInput]}
               placeholder="비밀번호를 입력하세요."
-              value={password}
-              onChangeText={setPassword}
+              value={pw}
+              onChangeText={setPw}
               secureTextEntry
               editable={!isLoading}
             />
           </View>
-
-          {/* 로그인 버튼 - 로딩 상태 반영 */}
           <TouchableOpacity 
             style={[styles.actionButton, isLoading && styles.disabledButton]} 
             onPress={handleLogin}
@@ -98,8 +82,6 @@ const LoginScreen = ({ navigation }) => {
               {isLoading ? '로그인 중...' : '로그인'}
             </Text>
           </TouchableOpacity>
-
-          {/* 회원가입 버튼 */}
           <TouchableOpacity 
             style={[styles.actionButton, isLoading && styles.disabledButton]}
             onPress={() => navigation.navigate('SignupScreen1')}
@@ -112,6 +94,7 @@ const LoginScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: {

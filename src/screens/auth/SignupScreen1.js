@@ -4,36 +4,31 @@ import { colors } from '../../styles/colors';
 import useAuth from '../../hooks/useAuth';
 
 const SignupScreen1 = ({ navigation }) => {
-  const [userId, setUserId] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [id, setId] = useState('');
+  const [pw, setPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [isIdChecked, setIsIdChecked] = useState(false);
   const { checkIdDuplicate, isLoading } = useAuth();
 
-  // 아이디 중복 확인
   const handleIdChange = (text) => {
-    setUserId(text);
-    setIsIdChecked(false); // 아이디가 변경되면 중복 확인 상태 초기화
+    setId(text);
+    setIsIdChecked(false);
   };
 
   const checkIdDuplicateHandler = async () => {
-    if (!userId.trim()) {
+    if (!id.trim()) {
       Alert.alert('알림', '아이디를 입력해주세요.');
       return;
     }
-
-    // 아이디 유효성 검사 (6~12자)
-    if (userId.length < 6 || userId.length > 12) {
+    if (id.length < 6 || id.length > 12) {
       Alert.alert('알림', '아이디는 6~12자리를 입력하세요.');
       return;
     }
-
-    const result = await checkIdDuplicate(userId);
-
+    const result = await checkIdDuplicate(id);
     if (result.success) {
-      if (result.data  && result.data.available) {
+      if (result.data && result.data.available) {
         Alert.alert('알림', '사용 가능한 아이디입니다.');
         setIsIdChecked(true);
       } else {
@@ -45,10 +40,8 @@ const SignupScreen1 = ({ navigation }) => {
     }
   };
 
-  // 다음 단계로 이동하는 함수 추가
   const handleNext = () => {
-    // 유효성 검사
-    if (!userId.trim()) {
+    if (!id.trim()) {
       Alert.alert('알림', '아이디를 입력해주세요.');
       return;
     }
@@ -56,15 +49,15 @@ const SignupScreen1 = ({ navigation }) => {
       Alert.alert('알림', '아이디 중복 확인을 해주세요.');
       return;
     }
-    if (!password) {
+    if (!pw) {
       Alert.alert('알림', '비밀번호를 입력해주세요.');
       return;
     }
-    if (password.length < 6 || password.length > 15) {
+    if (pw.length < 6 || pw.length > 15) {
       Alert.alert('알림', '비밀번호는 6~15자리를 입력하세요.');
       return;
     }
-    if (password !== confirmPassword) {
+    if (pw !== confirmPw) {
       Alert.alert('알림', '비밀번호가 일치하지 않습니다.');
       return;
     }
@@ -76,15 +69,14 @@ const SignupScreen1 = ({ navigation }) => {
       Alert.alert('알림', '전화번호를 입력해주세요.');
       return;
     }
-    
-    // 다음 단계로 이동
     navigation.navigate('SignupScreen2', {
-      userId: userId.trim(),
-      password,
+      id: id.trim(),
+      pw,
       name: name.trim(),
       phone: phone.trim()
     });
   };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -102,7 +94,7 @@ const SignupScreen1 = ({ navigation }) => {
               <TextInput
                 style={[styles.idInput, isLoading && styles.disabledInput]}
                 placeholder="아이디를 입력하세요."
-                value={userId}
+                value={id}
                 onChangeText={handleIdChange} // 수정: 함수 호출로 변경
                 editable={!isLoading}
                 autoCapitalize="none"
@@ -127,8 +119,8 @@ const SignupScreen1 = ({ navigation }) => {
               style={[styles.input, isLoading && styles.disabledInput]}
               placeholder="비밀번호를 입력하세요."
               secureTextEntry
-              value={password}
-              onChangeText={setPassword}
+              value={pw}
+              onChangeText={setPw}
               editable={!isLoading}
             />
             <Text style={styles.inputNote}>6~15자리를 입력하세요.</Text>
@@ -141,8 +133,8 @@ const SignupScreen1 = ({ navigation }) => {
               style={[styles.input, isLoading && styles.disabledInput]}
               placeholder="비밀번호를 입력하세요."
               secureTextEntry
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              value={confirmPw}
+              onChangeText={setConfirmPw}
               editable={!isLoading}
             />
           </View>

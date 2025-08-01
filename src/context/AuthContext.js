@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [error, setError] = useState(null);
 
-  // 앱 시작 시 로그인 상태 확인
   useEffect(() => {
     const bootstrapAsync = async () => {
       setIsLoading(true);
@@ -31,27 +30,26 @@ export const AuthProvider = ({ children }) => {
     bootstrapAsync();
   }, []);
 
-  // Context에서 제공할 모든 함수들 - auth.js와 일관된 응답 형식 사용
   const authContext = {
     isLoading,
     userToken,
     userInfo,
     error,
-    
-    login: async (userId, password) => {
+
+    login: async (id, pw) => {
       setIsLoading(true);
       try {
-        const response = await authService.login(userId, password);
-        
+        const response = await authService.login(id, pw);
+
         if (response.success) {
           const { token, user } = response.data;
           await authService.saveAuthToken(token);
           await authService.saveUserInfo(user);
-          
+
           setUserToken(token);
           setUserInfo(user);
           setError(null);
-          
+
           return { success: true };
         } else {
           setError(response.message);
@@ -64,52 +62,52 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    
+
     findId: async (name, phone) => {
       setIsLoading(true);
       try {
         const response = await authService.findId(name, phone);
         return response;
       } catch (err) {
-        return { 
-          success: false, 
-          message: err.message || '아이디 찾기 중 오류가 발생했습니다.' 
+        return {
+          success: false,
+          message: err.message || '아이디 찾기 중 오류가 발생했습니다.'
         };
       } finally {
         setIsLoading(false);
       }
     },
-    
-    findPassword: async (userId, phone) => {
+
+    findPassword: async (id, phone) => {
       setIsLoading(true);
       try {
-        const response = await authService.findPassword(userId, phone);
+        const response = await authService.findPassword(id, phone);
         return response;
       } catch (err) {
-        return { 
-          success: false, 
-          message: err.message || '비밀번호 찾기 중 오류가 발생했습니다.' 
+        return {
+          success: false,
+          message: err.message || '비밀번호 찾기 중 오류가 발생했습니다.'
         };
       } finally {
         setIsLoading(false);
       }
     },
-    
-    checkIdDuplicate: async (userId) => {
+
+    checkIdDuplicate: async (id) => {
       setIsLoading(true);
       try {
-        const response = await authService.checkIdDuplicate(userId);
+        const response = await authService.checkIdDuplicate(id);
         return response;
       } catch (err) {
-        return { 
-          success: false, 
-          message: err.message || '아이디 중복 확인 중 오류가 발생했습니다.' 
+        return {
+          success: false,
+          message: err.message || '아이디 중복 확인 중 오류가 발생했습니다.'
         };
       } finally {
         setIsLoading(false);
       }
     },
-    
+
     signup: async (userData) => {
       setIsLoading(true);
       try {
@@ -124,7 +122,7 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    
+
     logout: async () => {
       setIsLoading(true);
       try {

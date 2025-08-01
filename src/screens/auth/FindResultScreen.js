@@ -3,9 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-na
 import { colors } from '../../styles/colors';
 
 const FindResultScreen = ({ navigation, route }) => {
-  // 이전 화면에서 전달받은 데이터
   const { type, result, message } = route.params || {};
-  
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -16,7 +15,6 @@ const FindResultScreen = ({ navigation, route }) => {
             </Text>
             <View style={styles.underline} />
           </View>
-
           <View style={styles.resultContent}>
             <Text style={styles.labelText}>
               {type === 'id' ? '아이디' : '비밀번호'}
@@ -27,8 +25,6 @@ const FindResultScreen = ({ navigation, route }) => {
               </View>
             )}
           </View>
-
-          {/* 로그인 화면으로 이동 버튼 */}
           <TouchableOpacity 
             style={styles.loginButton} 
             onPress={() => navigation.navigate('Login')}
@@ -40,6 +36,7 @@ const FindResultScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: {

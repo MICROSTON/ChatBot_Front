@@ -11,19 +11,19 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-  if (route.params?.profile) {
-    setProfile(route.params.profile);
-    return;
-  }
-  (async () => {
-    try {
-      const data = await getProfile(userNum);
-      setProfile(data);
-    } catch {
-      Alert.alert('오류', '프로필 정보를 불러올 수 없습니다.');
+    if (route.params?.profile) {
+      setProfile(route.params.profile);
+      return;
     }
-  })();
-}, [userNum, route.params?.profile]);
+    (async () => {
+      try {
+        const data = await getProfile(userNum);
+        setProfile(data);
+      } catch {
+        Alert.alert('오류', '프로필 정보를 불러올 수 없습니다.');
+      }
+    })();
+  }, [userNum, route.params?.profile]);
 
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 되었습니다.', [
@@ -67,50 +67,49 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>프로필</Text>
         <View style={{ width: 24 }} />
-    </View>
+      </View>
       <View style={styles.row}>
-      <Text style={styles.label}>이름</Text>
-      <Text style={styles.value}>{profile.name}</Text>
-    </View>
-    <View style={styles.row}>
-      <Text style={styles.label}>전화번호</Text>
-      <Text style={styles.value}>{profile.phone}</Text>
-    </View>
-    <View style={styles.row}>
-      <Text style={styles.label}>생년월일</Text>
-      <Text style={styles.value}>{profile.birthdate}</Text>
-    </View>
-    <View style={styles.row}>
-      <Text style={styles.label}>가구원 수</Text>
-      <Text style={styles.value}>{profile.familySize}</Text>
-    </View>
-    <View style={styles.row}>
-      <Text style={styles.label}>중위소득</Text>
-      <Text style={styles.value}>{profile.income}</Text>
-    </View>
-    <View style={styles.row}>
-      <Text style={styles.label}>주소</Text>
-      <Text style={styles.value}>{profile.address}</Text>
-    </View>
+        <Text style={styles.label}>이름</Text>
+        <Text style={styles.value}>{profile.name}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>전화번호</Text>
+        <Text style={styles.value}>{profile.phone}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>생년월일</Text>
+        <Text style={styles.value}>{profile.birth}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>가구원 수</Text>
+        <Text style={styles.value}>{profile.homeMember}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>중위소득</Text>
+        <Text style={styles.value}>{profile.income}</Text>
+      </View>
+      <View style={styles.row}>
+        <Text style={styles.label}>주소</Text>
+        <Text style={styles.value}>{profile.address}</Text>
+      </View>
 
-    <View style={styles.divider} />
+      <View style={styles.divider} />
 
-    <View style={styles.rowDivider} />
-    <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+      <View style={styles.rowDivider} />
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>로그아웃</Text>
-    </TouchableOpacity>
-    <View style={styles.rowDivider} />
-    <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
+      </TouchableOpacity>
+      <View style={styles.rowDivider} />
+      <TouchableOpacity style={styles.withdrawButton} onPress={handleWithdraw}>
         <Text style={styles.withdrawText}>회원탈퇴</Text>
-    </TouchableOpacity>
-    <View style={styles.rowDivider} />
-    <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { profile, userNum })}>
+      </TouchableOpacity>
+      <View style={styles.rowDivider} />
+      <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate('EditProfile', { profile, userNum })}>
         <Text style={styles.editButtonText}>수정하기</Text>
-    </TouchableOpacity>
-  </ScrollView>
-
+      </TouchableOpacity>
+    </ScrollView>
   );
-
+}
 
 function ProfileRow({ label, value }) {
   return (
@@ -120,7 +119,7 @@ function ProfileRow({ label, value }) {
     </View>
   );
 }
-}
+
 
 const styles = StyleSheet.create({
   container: { 

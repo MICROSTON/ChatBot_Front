@@ -2,7 +2,7 @@
 const ENVIRONMENTS = {
   dev: {
     // API 연동시 주소 작성
-    apiUrl: null,
+    apiUrl: null, //'http://52.64.43.42:8080',
     timeout: 10000, // API 요청 타임아웃 (ms)
     enableLogging: true,
     useDummyData: true,  // 개발 환경: 더미 데이터 사용
