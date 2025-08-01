@@ -1,16 +1,12 @@
-// 북마크 API 서비스 파일 생성
 import axios from 'axios';
 import { CONFIG, API_ENDPOINTS } from '../../config/config';
-import { getAuthToken } from './auth'; // 인증 토큰 가져오기
+import { getAuthToken } from './auth';
 
-
-// API 인스턴스 생성
 const api = axios.create({
   baseURL: CONFIG.apiUrl,
   timeout: CONFIG.timeout,
 });
 
-// 요청 인터셉터로 인증 토큰 추가
 api.interceptors.request.use(async (config) => {
   const token = await getAuthToken();
   if (token) {
@@ -31,9 +27,9 @@ export const fetchBookmarks = async () => {
 };
 
 // 북마크 추가
-export const addBookmarkToServer = async (welfareId) => {
+export const addBookmarkToServer = async ({ userNum, ageGroupNum }) => {
   try {
-    const response = await api.post(API_ENDPOINTS.welfare.bookmarks.add, { welfareId });
+    const response = await api.post(API_ENDPOINTS.welfare.bookmarks.add, { userNum, ageGroupNum });
     return response.data;
   } catch (error) {
     console.error('북마크 추가 오류:', error);
@@ -42,11 +38,10 @@ export const addBookmarkToServer = async (welfareId) => {
 };
 
 // 북마크 제거
-export const removeBookmarkFromServer = async (welfareId) => {
+export const removeBookmarkFromServer = async ({ userNum, ageGroupNum }) => {
   try {
-    // DELETE 요청 또는 백엔드 명세에 맞게 조정
     const response = await api.delete(
-      `${API_ENDPOINTS.welfare.bookmarks.remove}/${welfareId}`
+      `${API_ENDPOINTS.welfare.bookmarks.remove}/${userNum}/${ageGroupNum}`
     );
     return response.data;
   } catch (error) {

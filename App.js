@@ -29,14 +29,13 @@ const DismissKeyboard = ({ children }) => (
 );
 
 export default function App() {
-  const [isLoading, setIsLoading] = useState(true); // 항상 최상단에 위치
+  const [isLoading, setIsLoading] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
-
 
   if (isLoading) {
     return <SplashScreen />;

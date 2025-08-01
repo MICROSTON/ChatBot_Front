@@ -18,10 +18,10 @@ import { Ionicons } from '@expo/vector-icons'; // 아이콘 사용을 위해 추
 
 const SignupScreen2 = ({ navigation, route }) => {
   // 기존 상태 유지
-  const { userId, password, name, phone } = route.params;
+  const { id, pw, name, phone } = route.params;
   
-  const [birthdate, setBirthdate] = useState('');
-  const [familySize, setFamilySize] = useState('');
+  const [birth, setBirth] = useState('');
+  const [homeMember, setHomeMember] = useState('');
   const [income, setIncome] = useState('');
   const [province, setProvince] = useState('');
   const [city, setCity] = useState('');
@@ -91,12 +91,11 @@ const SignupScreen2 = ({ navigation, route }) => {
 
   // 기존 회원가입 처리 함수
   const handleSignup = async () => {
-    // 유효성 검사 (기존과 동일)
-    if (!birthdate.trim()) {
+    if (!birth.trim()) {
       Alert.alert('알림', '생년월일을 입력해주세요.');
       return;
     }
-    if (!familySize.trim()) {
+    if (!homeMember.trim()) {
       Alert.alert('알림', '가구원 수를 입력해주세요.');
       return;
     }
@@ -116,14 +115,14 @@ const SignupScreen2 = ({ navigation, route }) => {
     // 회원가입 데이터 준비
     const address = `${province} ${city}`;
     const signupData = {
-      userId,
-      password,
+      id,
+      pw,
       name,
       phone,
-      birthdate: birthdate.trim(),
-      familySize: familySize.trim(),
+      birth: birth.trim(),
+      homeMember: homeMember.trim(),
       income,
-      address: address
+      address
     };
 
     // 회원가입 처리
@@ -213,8 +212,8 @@ const SignupScreen2 = ({ navigation, route }) => {
               style={[styles.input, isLoading && styles.disabledInput]}
               placeholder="생년월일을 입력하세요."
               keyboardType="numeric"
-              value={birthdate}
-              onChangeText={setBirthdate}
+              value={birth}
+              onChangeText={setBirth}
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
               blurOnSubmit={true}
@@ -229,8 +228,8 @@ const SignupScreen2 = ({ navigation, route }) => {
               style={[styles.input, isLoading && styles.disabledInput]}
               placeholder="가구원 수를 입력하세요."
               keyboardType="numeric"
-              value={familySize}
-              onChangeText={setFamilySize}
+              value={homeMember}
+              onChangeText={setHomeMember}
               returnKeyType="done"
               onSubmitEditing={Keyboard.dismiss}
               blurOnSubmit={true}

@@ -6,12 +6,9 @@ import useAuth from '../../hooks/useAuth';
 const FindIdScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-
   const { findId, isLoading } = useAuth();
 
-
   const handleFindId = async () => {
-    // 유효성 검사
     if (!name.trim()) {
       Alert.alert('알림', '이름을 입력해주세요.');
       return;
@@ -20,19 +17,14 @@ const FindIdScreen = ({ navigation }) => {
       Alert.alert('알림', '전화번호를 입력해주세요.');
       return;
     }
-
-    // 아이디 찾기 처리 (useAuth 사용)
     const result = await findId(name.trim(), phone.trim());
-    
     if (result.success) {
-      // 성공 시 결과 화면으로 이동
       navigation.navigate('FindResult', {
         type: 'id',
-        result: result.data?.userId,
+        result: result.data?.id,
         message: result.data?.message || '아이디를 찾았습니다.'
       });
     } else {
-      // 실패 시 알림
       Alert.alert('알림', result.message || '입력하신 정보와 일치하는 사용자가 없습니다.');
     }
   };

@@ -10,7 +10,18 @@ const STORAGE_KEYS = {
   SETTINGS: 'userSettings',
 };
 
-// Axios 인스턴스 생성 (실제 API 연동 시 사용)
+// JWT 형식의 더미 토큰 생성 함수
+const generateDummyJWT = (id) => {
+  const header = btoa(JSON.stringify({ "alg": "HS256", "typ": "JWT" }));
+  const payload = btoa(JSON.stringify({ 
+    "sub": id, 
+    "iat": Math.floor(Date.now() / 1000),
+    "exp": Math.floor(Date.now() / 1000) + 3600
+  }));
+  const signature = btoa("dummy_signature_" + Math.random().toString(36).substring(2, 15));
+  return `${header}.${payload}.${signature}`;
+};
+
 let apiClient = null;
 console.log('CONFIG 확인:', CONFIG);
 console.log('useDummyData 확인:', CONFIG ? CONFIG.useDummyData : 'CONFIG가 없음');
@@ -24,6 +35,20 @@ try {
       },
       timeout: CONFIG.timeout || 10000,
     });
+
+    apiClient.interceptors.request.use(
+      async (config) => {
+        const token = await getAuthToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
     console.log('API 클라이언트 초기화 성공:', CONFIG.apiUrl);
   } else {
     console.log('API URL이 설정되지 않아 더미 데이터 모드로 동작합니다');
@@ -33,29 +58,19 @@ try {
 }
 
 // 로그인 함수
-export const login = async (userId, password) => {
+export const login = async (id, pw) => {
   console.log('login 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
-  
+
   try {
-    // 더미 데이터 모드 또는 API 클라이언트가 없는 경우
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 로그인 시도...');
-      
-      // 지연 시뮬레이션
       await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // 더미 데이터에서 사용자 찾기
       const user = DUMMY_USERS.find(
-        u => u.id === userId && u.password === password
+        u => u.id === id && u.pw === pw
       );
-      
       if (user) {
-        // 더미 토큰 생성
-        const token = 'dummy_token_' + Math.random().toString(36).substring(2, 15);
-        
-        // 비밀번호 제외한 사용자 정보
-        const { password, ...userInfo } = user;
-        
+        const token = generateDummyJWT(id);
+        const { pw, ...userInfo } = user;
         return {
           success: true,
           data: {
@@ -71,9 +86,9 @@ export const login = async (userId, password) => {
         };
       }
     } else {
-      // 실제 API 호출
       console.log('실제 API로 로그인 시도');
-      const response = await apiClient.post('/auth/login', { userId, password });
+      const response = await apiClient.post('/auth/login', { id, pw });
+      console.log('로그인 응답:', response.data);
       return response.data;
     }
   } catch (error) {
@@ -88,26 +103,18 @@ export const login = async (userId, password) => {
 // 회원가입 함수
 export const signup = async (userData) => {
   console.log('signup 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
-  
+
   try {
-    // 더미 데이터 모드 또는 API 클라이언트가 없는 경우
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 회원가입 처리...');
-      
-      // 지연 시뮬레이션
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // 아이디 중복 확인
-      const isDuplicate = DUMMY_USERS.some(user => user.id === userData.userId);
-      
+      const isDuplicate = DUMMY_USERS.some(user => user.id === userData.id);
       if (isDuplicate) {
         return {
           success: false,
           message: '이미 사용 중인 아이디입니다.'
         };
       }
-      
-      // 성공 응답 반환
       return {
         success: true,
         data: {
@@ -115,8 +122,9 @@ export const signup = async (userData) => {
         }
       };
     } else {
-      // 실제 API 호출
       console.log('실제 API로 회원가입 시도');
+      // userData는 반드시 아래 변수명으로 구성되어야 함
+      // { id, pw, name, phone, birth, homeMember, income, address }
       const response = await apiClient.post('/auth/signup', userData);
       return response.data;
     }
@@ -132,11 +140,9 @@ export const signup = async (userData) => {
 // 로그아웃 함수
 export const logout = async () => {
   try {
-    // 로컬 스토리지에서 인증 정보 삭제
     await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     await AsyncStorage.removeItem(STORAGE_KEYS.USER_INFO);
-    
-    // 더미 데이터 모드 또는 API 클라이언트가 없는 경우
+
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터 모드로 로그아웃 처리');
       return { success: true };
@@ -157,25 +163,19 @@ export const logout = async () => {
 // 아이디 찾기
 export const findId = async (name, phone) => {
   console.log('findId 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
-  
+
   try {
-    // 더미 데이터 모드 또는 API 클라이언트가 없는 경우
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 아이디 찾기...');
-      
-      // 더미 데이터에서 사용자 찾기
       const user = DUMMY_USERS.find(
         u => u.name === name && u.phone === phone
       );
-      
-      // 지연 시뮬레이션
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       if (user) {
         return {
           success: true,
           data: {
-            userId: user.id,
+            id: user.id,
             message: '아이디를 찾았습니다.'
           }
         };
@@ -200,31 +200,22 @@ export const findId = async (name, phone) => {
 };
 
 // 비밀번호 찾기
-export const findPassword = async (userId, phone) => {
+export const findPassword = async (id, phone) => {
   console.log('findPassword 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
-  
+
   try {
-    // 더미 데이터 모드 또는 API 클라이언트가 없는 경우
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 비밀번호 찾기...');
-      
-      // 지연 시뮬레이션
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // 더미 데이터에서 사용자 찾기
       const user = DUMMY_USERS.find(
-        u => u.id === userId && u.phone === phone
+        u => u.id === id && u.phone === phone
       );
-      
       if (user) {
-        // 임시 비밀번호 생성
-        const tempPassword = Math.random().toString(36).slice(-8);
-        
         return {
           success: true,
           data: {
-            tempPassword,
-            message: '임시 비밀번호가 발급되었습니다.'
+            pw: user.pw,
+            message: '비밀번호를 찾았습니다.'
           }
         };
       } else {
@@ -235,7 +226,7 @@ export const findPassword = async (userId, phone) => {
       }
     } else {
       console.log('실제 API로 비밀번호 찾기 시도');
-      const response = await apiClient.post('/auth/find-password', { userId, phone });
+      const response = await apiClient.post('/auth/find-password', { id, phone });
       return response.data;
     }
   } catch (error) {
@@ -247,35 +238,27 @@ export const findPassword = async (userId, phone) => {
   }
 };
 
-// 아이디 중복 확인
-export const checkIdDuplicate = async (userId) => {
-  // 입력값 검증 및 전처리
-  if (!userId || userId.trim() === '') {
+// 아이디 중복 확인 
+export const checkIdDuplicate = async (id) => {
+  if (!id || id.trim() === '') {
     return {
       success: false,
       message: '아이디를 입력해주세요.'
     };
   }
-  
-  const trimmedId = userId.trim();
+
+  const trimmedId = id.trim();
   console.log('중복 확인 요청 아이디:', trimmedId);
   console.log('DUMMY_USERS 목록:', DUMMY_USERS.map(u => u.id));
-  
+
   try {
-    // 더미 데이터 모드 또는 API 클라이언트가 없는 경우
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 아이디 중복 확인 중...');
-      
-      // 지연 시뮬레이션
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // 대소문자 구분 없이 비교
       const isDuplicate = DUMMY_USERS.some(
         user => user.id.toLowerCase() === trimmedId.toLowerCase()
       );
-      
       console.log('중복 여부 결과:', isDuplicate);
-      
       return {
         success: true,
         data: {
@@ -285,7 +268,8 @@ export const checkIdDuplicate = async (userId) => {
       };
     } else {
       console.log('실제 API로 아이디 중복 확인 시도');
-      const response = await apiClient.post('/auth/check-id', { userId: trimmedId });
+      // 파라미터명 id로 변경
+      const response = await apiClient.post('/auth/check-id', { id: trimmedId });
       return response.data;
     }
   } catch (error) {

@@ -4,13 +4,12 @@ import { colors } from '../../styles/colors';
 import useAuth from '../../hooks/useAuth';
 
 const FindPasswordScreen = ({ navigation }) => {
-  const [userId, setUserId] = useState('');
+  const [id, setId] = useState('');
   const [phone, setPhone] = useState('');
-  const { findPassword, isLoading } = useAuth(); // useAuth 훅 사용
+  const { findPassword, isLoading } = useAuth();
 
   const handleFindPassword = async () => {
-    // 유효성 검사
-    if (!userId.trim()) {
+    if (!id.trim()) {
       Alert.alert('알림', '아이디를 입력해주세요.');
       return;
     }
@@ -18,19 +17,14 @@ const FindPasswordScreen = ({ navigation }) => {
       Alert.alert('알림', '전화번호를 입력해주세요.');
       return;
     }
-
-    // 비밀번호 찾기 처리 (useAuth 사용)
-    const result = await findPassword(userId.trim(), phone.trim());
-    
+    const result = await findPassword(id.trim(), phone.trim());
     if (result.success) {
-      // 성공 시 결과 화면으로 이동
       navigation.navigate('FindResult', {
         type: 'password',
-        result: result.data?.tempPassword, // 임시 비밀번호 또는 기타 정보
+        result: result.data?.pw,
         message: result.data?.message || '비밀번호를 찾았습니다.'
       });
     } else {
-      // 실패 시 알림
       Alert.alert('알림', result.message || '입력하신 정보와 일치하는 사용자가 없습니다.');
     }
   };
@@ -50,8 +44,8 @@ const FindPasswordScreen = ({ navigation }) => {
             <TextInput
               style={[styles.input, isLoading && styles.disabledInput]}
               placeholder="아이디를 입력하세요."
-              value={userId}
-              onChangeText={setUserId}
+              value={id}
+              onChangeText={setId}
               editable={!isLoading}
               autoCapitalize="none"
             />
