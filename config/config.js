@@ -2,10 +2,10 @@
 const ENVIRONMENTS = {
   dev: {
     // API 연동시 주소 작성
-    apiUrl: null, //'http://52.64.43.42:8080',
+    apiUrl: 'http://192.168.50.137:8080',
     timeout: 10000, // API 요청 타임아웃 (ms)
     enableLogging: true,
-    useDummyData: true,  // 개발 환경: 더미 데이터 사용
+    useDummyData: false,  // 개발 환경: 더미 데이터 사용
   },
   staging: {
     apiUrl: 'http://staging-api.example.com/api',
