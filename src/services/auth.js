@@ -167,6 +167,8 @@ export const findId = async (name, phone) => {
   try {
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 아이디 찾기...');
+      console.log('입력한 name:', name);
+      console.log('입력한 phone:', phone);
       const user = DUMMY_USERS.find(
         u => u.name === name && u.phone === phone
       );
@@ -269,8 +271,16 @@ export const checkIdDuplicate = async (id) => {
     } else {
       console.log('실제 API로 아이디 중복 확인 시도');
       // 파라미터명 id로 변경
-      const response = await apiClient.post('/auth/check-id', { id: trimmedId });
-      return response.data;
+      const response = await apiClient.get('/auth/check-id', { params: { id: trimmedId } });
+
+return {
+  success: true,
+  data: {
+    available: response.data.available,
+    message: response.data.message
+  }
+};
+
     }
   } catch (error) {
     console.error('아이디 중복 확인 오류:', error);
