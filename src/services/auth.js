@@ -88,8 +88,16 @@ export const login = async (id, pw) => {
     } else {
       console.log('실제 API로 로그인 시도');
       const response = await apiClient.post('/auth/login', { id, pw });
-      console.log('로그인 응답:', response.data);
-      return response.data;
+      if (response.data && response.data.token && response.data.user) {
+        return {
+          success: true,
+          data: {
+            token: response.data.token,
+            user: response.data.user,
+            message: response.data.message || '로그인 성공'
+          }
+        };
+      }
     }
   } catch (error) {
     console.error('로그인 오류:', error);
@@ -227,7 +235,21 @@ export const findPassword = async (id, phone) => {
     } else {
       console.log('실제 API로 비밀번호 찾기 시도');
       const response = await apiClient.post('/auth/find-password', { id, phone });
-      return response.data;
+      // 응답 구조를 더미와 동일하게 가공
+      if (response.data && response.data.pw) {
+        return {
+          success: true,
+          data: {
+            pw: response.data.pw,
+            message: response.data.message || '비밀번호를 찾았습니다.'
+          }
+        };
+      } else {
+        return {
+          success: false,
+          message: response.data?.message || '입력하신 정보와 일치하는 사용자가 없습니다.'
+        };
+      }
     }
   } catch (error) {
     console.error('비밀번호 찾기 오류:', error);
@@ -266,10 +288,11 @@ export const checkIdDuplicate = async (id) => {
           message: isDuplicate ? '이미 사용 중인 아이디입니다.' : '사용 가능한 아이디입니다.'
         }
       };
+
     } else {
       console.log('실제 API로 아이디 중복 확인 시도');
       // 파라미터명 id로 변경
-      const response = await apiClient.post('/auth/check-id', { id: trimmedId });
+      const response = await apiClient.get('/auth/check-id', {params:{ id: trimmedId }});
       return response.data;
     }
   } catch (error) {
