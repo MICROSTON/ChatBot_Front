@@ -21,7 +21,7 @@ const FindPasswordScreen = ({ navigation }) => {
     if (result.success) {
       navigation.navigate('FindResult', {
         type: 'password',
-        result: result.data?.pw,
+        result: result.data?.password || result.data?.pw, // password 또는 pw 둘 다 지원
         message: result.data?.message || '비밀번호를 찾았습니다.'
       });
     } else {

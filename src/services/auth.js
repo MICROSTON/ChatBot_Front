@@ -87,9 +87,30 @@ export const login = async (id, pw) => {
       }
     } else {
       console.log('실제 API로 로그인 시도');
-      const response = await apiClient.post('/auth/login', { id, pw });
-      console.log('로그인 응답:', response.data);
-      return response.data;
+      console.log('요청 데이터:', { id, pw });
+      try {
+        const response = await apiClient.post('/auth/login', { id, pw });
+        console.log('백엔드 로그인 응답:', response.data);
+        
+        // 백엔드 응답을 프론트엔드 형식에 맞게 변환
+        const transformedResponse = {
+          success: true, // 로그인 성공 시 항상 true
+          data: {
+            token: response.data.tokenDto?.accessToken,
+            user: {
+              id: id, // 로그인한 아이디
+              // 추가 사용자 정보는 필요시 백엔드에서 제공해야 함
+            }
+          },
+          message: response.data.message
+        };
+        
+        console.log('변환된 응답:', transformedResponse);
+        return transformedResponse;
+      } catch (apiError) {
+        console.error('로그인 API 요청 실패:', apiError.response?.status, apiError.response?.data);
+        throw apiError;
+      }
     }
   } catch (error) {
     console.error('로그인 오류:', error);
@@ -167,6 +188,8 @@ export const findId = async (name, phone) => {
   try {
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 아이디 찾기...');
+      console.log('입력한 name:', name);
+      console.log('입력한 phone:', phone);
       const user = DUMMY_USERS.find(
         u => u.name === name && u.phone === phone
       );
@@ -202,23 +225,30 @@ export const findId = async (name, phone) => {
 // 비밀번호 찾기
 export const findPassword = async (id, phone) => {
   console.log('findPassword 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
+  console.log('입력된 id:', id);
+  console.log('입력된 phone:', phone);
 
   try {
     if (CONFIG?.useDummyData === true || !apiClient) {
       console.log('더미 데이터로 비밀번호 찾기...');
+      console.log('DUMMY_USERS:', DUMMY_USERS);
       await new Promise(resolve => setTimeout(resolve, 500));
       const user = DUMMY_USERS.find(
         u => u.id === id && u.phone === phone
       );
+      console.log('찾은 사용자:', user);
       if (user) {
+        console.log('비밀번호 찾기 성공:', user.pw);
         return {
           success: true,
           data: {
-            pw: user.pw,
+            password: user.pw, // 백엔드와 동일한 키 사용
+            pw: user.pw, // 기존 호환성 유지
             message: '비밀번호를 찾았습니다.'
           }
         };
       } else {
+        console.log('일치하는 사용자 없음');
         return {
           success: false,
           message: '입력하신 정보와 일치하는 사용자가 없습니다.'
@@ -226,8 +256,15 @@ export const findPassword = async (id, phone) => {
       }
     } else {
       console.log('실제 API로 비밀번호 찾기 시도');
-      const response = await apiClient.post('/auth/find-password', { id, phone });
-      return response.data;
+      console.log('요청 데이터:', { id, phone });
+      try {
+        const response = await apiClient.post('/auth/find-password', { id, phone });
+        console.log('백엔드 응답:', response.data);
+        return response.data;
+      } catch (apiError) {
+        console.error('API 요청 실패:', apiError.response?.status, apiError.response?.data);
+        throw apiError;
+      }
     }
   } catch (error) {
     console.error('비밀번호 찾기 오류:', error);
@@ -269,8 +306,16 @@ export const checkIdDuplicate = async (id) => {
     } else {
       console.log('실제 API로 아이디 중복 확인 시도');
       // 파라미터명 id로 변경
-      const response = await apiClient.post('/auth/check-id', { id: trimmedId });
-      return response.data;
+      const response = await apiClient.get('/auth/check-id', { params: { id: trimmedId } });
+
+return {
+  success: true,
+  data: {
+    available: response.data.available,
+    message: response.data.message
+  }
+};
+
     }
   } catch (error) {
     console.error('아이디 중복 확인 오류:', error);

@@ -2,10 +2,10 @@
 const ENVIRONMENTS = {
   dev: {
     // API 연동시 주소 작성
-    apiUrl: null, //'http://52.64.43.42:8080',
+    apiUrl: 'http://172.30.1.48:8080',
     timeout: 10000, // API 요청 타임아웃 (ms)
     enableLogging: true,
-    useDummyData: true,  // 개발 환경: 더미 데이터 사용
+    useDummyData: false,  // 개발 환경: 실제 API 사용
   },
   staging: {
     apiUrl: 'http://staging-api.example.com/api',
@@ -41,7 +41,7 @@ export const API_ENDPOINTS = {
   welfare: {
     like: '/welfare/likelist',               // 좋아요 복지 목록 조회(다시 지정 필요)
     bookmarks: {
-      list: '/welfare/bookmarks',        // 북마크 목록 조회
+      list: '/welfare/bookmarks/{id}',   // 북마크 목록 조회 (백엔드와 일치)
       add: '/welfare/bookmarks/add',     // 북마크 추가
       remove: '/welfare/bookmarks/remove', // 북마크 삭제
     },

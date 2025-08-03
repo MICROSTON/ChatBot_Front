@@ -31,6 +31,17 @@ export const DUMMY_USERS = [
     homeMember: '2',
     income: '2',
     address: '부산시 해운대구'
+  },
+  { 
+    id: 'leesj9627', 
+    pw: 'leesj1234', 
+    name: '이성재', 
+    phone: '01038419627', 
+    email: 'leesj9627@example.com',
+    birth: '19960101',
+    homeMember: '3',
+    income: '4',
+    address: '서울시 강남구'
   }
 ];
 

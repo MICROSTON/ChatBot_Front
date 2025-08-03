@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, Switch, SafeAreaView, TouchableOpacity, Alert, Image, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import Constants from 'expo-constants';
 import NotificationCard from '../../components/NotificationCard';
 import { API_BASE_URL } from '../../../config/config';
 import dummyNotifications from '../../../config/dummyNotifications';
+import { BookmarkContext } from '../../context/BookmarkContext';
+import { AuthContext } from '../../context/AuthContext';
 
 const CATEGORIES = [
   { ageGroupNum: 1, label: '임산부/여자' },
@@ -34,31 +36,55 @@ const BookmarkScreen = ({ navigation }) => {
   const [selectedCategories, setSelectedCategories] = useState({});
   const [selectedCount, setSelectedCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
-  const [userNum, setUserNum] = useState(null); // 실제 로그인 유저 번호로 세팅 필요
+  const [userNum, setUserNum] = useState(null);
+  
+  // Context 사용
+  const { addBookmark, removeBookmark, bookmarks, error: bookmarkError } = useContext(BookmarkContext);
+  const { userInfo } = useContext(AuthContext);
 
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        // 기존 데이터 초기화 (임시)
-        await AsyncStorage.removeItem(STORAGE_KEY);
-        
-        const savedCategories = await AsyncStorage.getItem(STORAGE_KEY);
-        if (savedCategories) {
-          const parsedCategories = JSON.parse(savedCategories);
-          console.log('로드된 카테고리:', parsedCategories);
-          setSelectedCategories(parsedCategories);
-
-          const count = Object.values(parsedCategories).filter(val => val).length;
-          setSelectedCount(count);
-        } else {
-          // 초기 상태 설정
-          const initialCategories = {};
+        // 기존 북마크 데이터를 먼저 확인
+        if (bookmarks && bookmarks.length > 0) {
+          console.log('기존 북마크 목록:', bookmarks);
+          
+          // 북마크에 있는 카테고리들을 선택된 상태로 설정
+          const syncedCategories = {};
           CATEGORIES.forEach(category => {
-            initialCategories[category.ageGroupNum] = false;
+            syncedCategories[category.ageGroupNum] = bookmarks.some(
+              bookmark => bookmark.ageGroupNum === category.ageGroupNum
+            );
           });
-          console.log('초기 카테고리 설정:', initialCategories);
-          setSelectedCategories(initialCategories);
-          setSelectedCount(0);
+          
+          console.log('북마크 기반 동기화된 카테고리:', syncedCategories);
+          setSelectedCategories(syncedCategories);
+          
+          const count = Object.values(syncedCategories).filter(val => val).length;
+          setSelectedCount(count);
+          
+          // AsyncStorage에도 저장
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(syncedCategories));
+        } else {
+          // 북마크가 없으면 저장된 카테고리 설정을 로드
+          const savedCategories = await AsyncStorage.getItem(STORAGE_KEY);
+          if (savedCategories) {
+            const parsedCategories = JSON.parse(savedCategories);
+            console.log('로드된 카테고리:', parsedCategories);
+            setSelectedCategories(parsedCategories);
+
+            const count = Object.values(parsedCategories).filter(val => val).length;
+            setSelectedCount(count);
+          } else {
+            // 초기 상태 설정
+            const initialCategories = {};
+            CATEGORIES.forEach(category => {
+              initialCategories[category.ageGroupNum] = false;
+            });
+            console.log('초기 카테고리 설정:', initialCategories);
+            setSelectedCategories(initialCategories);
+            setSelectedCount(0);
+          }
         }
       } catch (error) {
         console.error('카테고리 로드 오류:', error);
@@ -68,9 +94,12 @@ const BookmarkScreen = ({ navigation }) => {
     loadCategories();
     checkNotificationPermissions();
     fetchNotifications();
-    // 실제 로그인 유저 정보에서 userNum을 받아와야 함
-    // setUserNum(로그인된 유저의 userNum);
-  }, []);
+    
+    // 로그인된 사용자 정보 설정
+    if (userInfo?.id) {
+      setUserNum(userInfo.id);
+    }
+  }, [userInfo, bookmarks]);
 
   const checkNotificationPermissions = async () => {
     if (!Constants.isDevice) {
@@ -167,8 +196,8 @@ const BookmarkScreen = ({ navigation }) => {
     }
   };
 
-  // 카테고리 토글 처리 - 디버깅 버전
-  const toggleCategory = (ageGroupNum) => {
+  // 카테고리 토글 처리 - 북마크 추가/삭제 기능 포함
+  const toggleCategory = async (ageGroupNum) => {
     console.log('=== toggleCategory 호출 ===');
     console.log('ageGroupNum:', ageGroupNum);
     console.log('현재 selectedCategories:', selectedCategories);
@@ -177,26 +206,43 @@ const BookmarkScreen = ({ navigation }) => {
     const isCurrentlySelected = selectedCategories[ageGroupNum];
     console.log('isCurrentlySelected:', isCurrentlySelected);
 
-    // 현재 선택되어 있다면 -> 해제 (항상 허용)
+    // 현재 선택되어 있다면 -> 해제 (북마크 삭제)
     if (isCurrentlySelected) {
-      console.log('-> 해제 처리');
-      const newSelectedCategories = {
-        ...selectedCategories,
-        [ageGroupNum]: false
-      };
+      console.log('-> 해제 처리 (북마크 삭제)');
       
-      const newCount = Object.values(newSelectedCategories).filter(val => val).length;
-      console.log('newSelectedCategories:', newSelectedCategories);
-      console.log('newCount:', newCount);
-      
-      setSelectedCategories(newSelectedCategories);
-      setSelectedCount(newCount);
-      saveCategories(newSelectedCategories);
+      try {
+        const result = await removeBookmark({ 
+          userNum: userInfo?.id, 
+          ageGroupNum 
+        });
+        
+        if (result) {
+          const newSelectedCategories = {
+            ...selectedCategories,
+            [ageGroupNum]: false
+          };
+          
+          const newCount = Object.values(newSelectedCategories).filter(val => val).length;
+          console.log('newSelectedCategories:', newSelectedCategories);
+          console.log('newCount:', newCount);
+          
+          setSelectedCategories(newSelectedCategories);
+          setSelectedCount(newCount);
+          saveCategories(newSelectedCategories);
+          
+          Alert.alert('성공', '북마크가 해제되었습니다.');
+        } else {
+          Alert.alert('오류', '북마크 해제에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('북마크 해제 오류:', error);
+        Alert.alert('오류', '북마크 해제 중 문제가 발생했습니다.');
+      }
       return;
     }
 
-    // 현재 선택되어 있지 않다면 -> 선택 시도
-    console.log('-> 선택 시도');
+    // 현재 선택되어 있지 않다면 -> 선택 시도 (북마크 추가)
+    console.log('-> 선택 시도 (북마크 추가)');
     console.log('현재 selectedCount:', selectedCount, 'MAX_SELECTIONS:', MAX_SELECTIONS);
     
     // 이미 최대 개수에 도달했는지 확인
@@ -206,20 +252,37 @@ const BookmarkScreen = ({ navigation }) => {
       return;
     }
 
-    // 선택 가능한 경우
-    console.log('-> 선택 가능, 처리 중');
-    const newSelectedCategories = {
-      ...selectedCategories,
-      [ageGroupNum]: true
-    };
+    // 선택 가능한 경우 - 북마크 추가
+    console.log('-> 선택 가능, 북마크 추가 중');
     
-    const newCount = Object.values(newSelectedCategories).filter(val => val).length;
-    console.log('newSelectedCategories:', newSelectedCategories);
-    console.log('newCount:', newCount);
-    
-    setSelectedCategories(newSelectedCategories);
-    setSelectedCount(newCount);
-    saveCategories(newSelectedCategories);
+    try {
+      const result = await addBookmark({ 
+        userNum: userInfo?.id, 
+        ageGroupNum 
+      });
+      
+      if (result) {
+        const newSelectedCategories = {
+          ...selectedCategories,
+          [ageGroupNum]: true
+        };
+        
+        const newCount = Object.values(newSelectedCategories).filter(val => val).length;
+        console.log('newSelectedCategories:', newSelectedCategories);
+        console.log('newCount:', newCount);
+        
+        setSelectedCategories(newSelectedCategories);
+        setSelectedCount(newCount);
+        saveCategories(newSelectedCategories);
+        
+        Alert.alert('성공', '북마크가 추가되었습니다.');
+      } else {
+        Alert.alert('오류', '북마크 추가에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('북마크 추가 오류:', error);
+      Alert.alert('오류', '북마크 추가 중 문제가 발생했습니다.');
+    }
   };
 
   const saveCategories = async (categories) => {
@@ -233,6 +296,8 @@ const BookmarkScreen = ({ navigation }) => {
       console.error('카테고리 저장 오류:', error);
     }
   };
+
+  // 카테고리 토글 처리 - 북마크 추가/삭제 기능 포함
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -283,6 +348,13 @@ const BookmarkScreen = ({ navigation }) => {
               </View>
             ))}
           </View>
+
+          {/* 에러 메시지 표시 */}
+          {bookmarkError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{bookmarkError}</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -357,7 +429,76 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: 16,
     color: '#333',
-  }
+  },
+  buttonContainer: {
+    marginTop: 30,
+    paddingHorizontal: 20,
+  },
+  addBookmarkButton: {
+    backgroundColor: '#55B7B5',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#364144',
+  },
+  disabledButton: {
+    backgroundColor: '#E0E0E0',
+    borderColor: '#CCCCCC',
+  },
+  addBookmarkButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorContainer: {
+    marginTop: 10,
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    color: '#FF0000',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  bookmarkListContainer: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 10,
+    paddingVertical: 10,
+  },
+  bookmarkListTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    paddingHorizontal: 10,
+  },
+  bookmarkItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  bookmarkText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  removeButton: {
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  removeButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
 });
 
 export default BookmarkScreen;
