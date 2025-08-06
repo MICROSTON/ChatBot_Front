@@ -143,8 +143,9 @@ export default function EditProfileScreen({ navigation, route }) {
       Alert.alert('수정 완료', '프로필이 수정되었습니다.', [
         { text: '확인', onPress: () => navigation.navigate('Profile', { profile: updated, userNum }) }
       ]);
-    } catch {
-      Alert.alert('오류', '프로필 수정 실패');
+    } catch(error) {
+      console.log('프로필 수정 에러:', error);
+      Alert.alert('오류', error.message || '프로필 수정에 실패했습니다.');
     }
   };
 

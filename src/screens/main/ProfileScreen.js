@@ -19,7 +19,7 @@ export default function ProfileScreen() {
       try {
         const data = await getProfile(userNum);
         setProfile(data);
-      } catch {
+      } catch(error) {
         Alert.alert('오류', '프로필 정보를 불러올 수 없습니다.');
       }
     })();
@@ -43,7 +43,7 @@ export default function ProfileScreen() {
             Alert.alert('탈퇴 완료', '회원탈퇴 처리되었습니다.', [
               { text: '확인', onPress: () => navigation.replace('Login') }
             ]);
-          } catch {
+          } catch(error) {
             Alert.alert('오류', '회원탈퇴 실패');
           }
         }
