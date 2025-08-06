@@ -1,50 +1,71 @@
-// src/screens/chat/HomeScreen.js
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, route, onShowGuide, onMount }) {
+  useEffect(() => {
+    if (route?.params?.showGuide === true || route?.params === undefined) {
+      onShowGuide?.();
+    }
+    onMount?.();
+  }, [route?.params?.showGuide]);
+
   return (
     <View style={styles.container}>
+      {/* 헤더 */}
       <View style={styles.headerRow}>
-        <Text style={styles.title}>SHChatbot</Text>
-        <TouchableOpacity>
-          <Text style={styles.profile}>프로필</Text>
+        <Image
+          source={require('../../../assets/images/SHChatbot.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        {/* ❗ 오류 원인: Profile 스크린이 chat App.js에 없음 → chat에서는 무시되도록 처리 */}
+        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+          <Image
+            source={require('../../../assets/icons/profile.png')}
+            style={styles.profileIcon}
+            resizeMode="contain"
+          />
         </TouchableOpacity>
       </View>
 
       <View style={styles.divider} />
 
-      <View style={styles.guideRow}>
-        <Text style={styles.guideIcon}>ⓘ</Text>
-        <Text style={styles.guideText}>가이드</Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.chatBox}
-        onPress={() => navigation.navigate('Chat')}
-      >
-        <Image
-          source={require('../../../assets/images/mascot.png')}
-          style={styles.avatar}
-        />
-        <Text style={styles.chatText}>대화 하기</Text>
-      </TouchableOpacity>
-
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('FavoriteList')}
-        >
-          <Text style={styles.buttonText}>좋아요</Text>
+      {/* 가이드 / 대화하기 / 버튼 영역 */}
+      <View style={styles.topArea}>
+        <TouchableOpacity style={styles.guideRow} onPress={() => onShowGuide?.()}>
+          <Text style={styles.guideIcon}>ⓘ</Text>
+          <Text style={styles.guideText}>가이드</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => navigation.navigate('WelfareDetail')}
+          style={styles.chatBox}
+          onPress={() => navigation.navigate('Chat')}
         >
-          <Text style={styles.buttonText}>즐겨찾기</Text>
+          <Image
+            source={require('../../../assets/images/mascot.png')}
+            style={styles.avatar}
+          />
+          <Text style={styles.chatText}>대화 하기</Text>
         </TouchableOpacity>
+
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate('FavoriteList')}
+          >
+            <Text style={styles.buttonText}>좋아요</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              if (navigation.navigate) {
+                navigation.navigate('Bookmark');
+              }
+            }}
+          >
+            <Text style={styles.buttonText}>즐겨찾기</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -53,76 +74,97 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 60,
-    paddingHorizontal: 25,
+    backgroundColor: '#ffffff', // ✅ 배경 색상 수정
+    paddingHorizontal: 0,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 60,
+    marginBottom: 10,
+    paddingRight: 20,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#3f9b9c',
-  },
-  profile: {
-    fontSize: 14,
-    color: '#888',
+  logo: {
+    width: 190,
+    height: 40,
+    paddingHorizontal: 25,
+    paddingTop: 10,
   },
   divider: {
     borderBottomColor: '#000',
     borderBottomWidth: 1,
     marginTop: 10,
+    marginBottom: 20,
+  },
+  topArea: {
+    alignItems: 'center',
+    marginTop: 0,
   },
   guideRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 15,
+    marginBottom: 20,
   },
   guideIcon: {
-    color: '#3f9b9c',
-    fontSize: 16,
-    marginRight: 5,
+    fontSize: 18,
+    color: '#E3A772',
+    marginRight: 6,
+    marginTop: 100,
   },
   guideText: {
-    color: '#222',
-    fontSize: 16,
+    fontSize: 15,
+    color: '#333',
+    marginTop: 100,
   },
   chatBox: {
-    backgroundColor: '#51b8b7',
-    borderRadius: 20,
-    marginTop: 20,
-    paddingVertical: 30,
+    backgroundColor: '#55B7B5',
+    borderRadius: 24,
+    paddingVertical: 50,
     alignItems: 'center',
+    width: 260,
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#364144',
   },
   avatar: {
-    width: 90,
-    height: 90,
+    width: 100,
+    height: 100,
     marginBottom: 10,
+    borderRadius: 50,
+    backgroundColor: '#fff',
   },
   chatText: {
-    fontSize: 18,
+    fontSize: 30,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#222',
+    marginTop: 20,
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    width: 260,
   },
   button: {
     flex: 0.48,
-    backgroundColor: '#51b8b7',
-    paddingVertical: 15,
-    borderRadius: 20,
+    backgroundColor: '#55B7B5',
+    paddingVertical: 20,
+    borderRadius: 16,
     alignItems: 'center',
+    marginHorizontal: 5,
+    borderWidth: 2,
+    borderColor: '#364144',
   },
   buttonText: {
     fontSize: 16,
-    color: '#000',
+    color: 'black',
     fontWeight: '500',
+  },
+  profileIcon: {
+    width: 27,
+    height: 27,
+    marginRight: 18,
+    marginTop: 10,
   },
 });

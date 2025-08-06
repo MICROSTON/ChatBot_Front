@@ -1,58 +1,39 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+// src/screens/chat/WelfareCard.js
 
-export default function WelfareCard({ title, content, onLike }) {
-  const [liked, setLiked] = useState(false);
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-  const handleLike = () => {
-    setLiked(true);
-    onLike && onLike(title); // optional 콜백
-  };
-
+export default function WelfareCard({ item, onPress }) {
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <TouchableOpacity onPress={handleLike} disabled={liked}>
-          <Text style={[styles.likeButton, liked && styles.liked]}>
-            {liked ? '♥' : '♡'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.content}>{content}</Text>
-    </View>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.8}
+      onPress={() => onPress(item)}
+    >
+      <Text style={styles.title}>{item.Benefit_name}</Text>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FEFFFF',
-    borderRadius: 10,
-    padding: 16,
-    marginVertical: 10,
-    borderWidth: 1,
-    borderColor: '#3AAFA9',
-  },
-  header: {
+    backgroundColor: '#55B7B5',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
   },
   title: {
+    flex: 1,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#17252A',
-  },
-  content: {
-    fontSize: 14,
-    color: '#444',
-  },
-  likeButton: {
-    fontSize: 18,
-    color: '#3AAFA9',
-  },
-  liked: {
-    color: '#FF6B6B',
+    color: '#FFFFFF',
   },
 });

@@ -1,40 +1,41 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 
 const SwipeableListItem = ({ children, onDelete }) => {
-  const renderRightActions = () => (
-    <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
-      <FontAwesome name="trash" size={20} color="white" />
-      <Text style={styles.deleteText}>삭제</Text>
-    </TouchableOpacity>
-  );
+  const renderRightActions = (progress, dragX) => {
+    const scale = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [1, 0],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <TouchableOpacity onPress={onDelete}>
+        <Animated.View style={[styles.deleteButton, { transform: [{ scale }] }]}>
+          <Ionicons name="trash" size={24} color="#fff" />
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <Swipeable renderRightActions={renderRightActions}>
-      <View style={styles.itemContainer}>{children}</View>
+      {children}
     </Swipeable>
   );
 };
 
 const styles = StyleSheet.create({
-  itemContainer: {
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-  },
   deleteButton: {
-    backgroundColor: '#ff4d4d',
+    backgroundColor: '#FF4D4D',
     justifyContent: 'center',
     alignItems: 'center',
-    width: 70,
-    height: '100%',
-  },
-  deleteText: {
-    color: 'white',
-    fontSize: 12,
-    marginTop: 4,
+    width: 80,
+    height: '90%',
+    borderRadius: 8,
+    marginVertical: 5,
   },
 });
 

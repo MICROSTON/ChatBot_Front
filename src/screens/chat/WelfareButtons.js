@@ -1,51 +1,60 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React from 'react'; 
+import { View, TouchableOpacity, Text, Image, StyleSheet } from 'react-native';
 
-// 예시 키워드 (나중에 API에서 받아오도록 변경 가능)
-const mockKeywords = [
-  '임산부 교통비 지원',
-  '위기 임산부 지원',
-  '산전 검사 지원',
-  '영유아 건강검진',
+const categories = [
+  { BenefitCategory_num: 1, label: '경제', icon: require('../../../assets/images/economy.png') },
+  { BenefitCategory_num: 2, label: '의료', icon: require('../../../assets/images/medical.png') },
+  { BenefitCategory_num: 3, label: '교육', icon: require('../../../assets/images/education.png') },
+  { BenefitCategory_num: 4, label: '문화 시설', icon: require('../../../assets/images/culture.png') },
+  { BenefitCategory_num: 5, label: '기타', icon: require('../../../assets/images/etc.png') },
 ];
 
-export default function WelfareButtons({ selectedCategory, onSendMessage }) {
-  const handleKeywordClick = (keyword) => {
-    onSendMessage(keyword);
-  };
-
+export default function WelfareButtons({ onSelect }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.container}>
-      {mockKeywords.map((keyword, index) => (
+    <View style={styles.container}>
+      {categories.map((item, i) => (
         <TouchableOpacity
-          key={index}
+          key={i}
           style={styles.button}
-          onPress={() => handleKeywordClick(keyword)}
+          onPress={() => {
+            if (typeof onSelect === 'function') {
+              onSelect(item); // 객체 전체 전달
+            } else {
+              console.warn('WelfareButtons: onSelect 함수가 정의되지 않았습니다.');
+            }
+          }}
         >
-          <Text style={styles.buttonText}>{keyword}</Text>
+          <Image source={item.icon} style={styles.icon} />
+          <Text style={styles.label}>{item.label}</Text>
         </TouchableOpacity>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    maxHeight: 60,
-    paddingVertical: 10,
-    paddingHorizontal: 5,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 12,
   },
   button: {
-    backgroundColor: '#FEFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#3AAFA9',
+    width: '48%',
+    height: 80,
+    backgroundColor: '#55B7B5',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  buttonText: {
-    fontSize: 14,
-    color: '#3AAFA9',
+  icon: {
+    width: 28,
+    height: 28,
+    marginBottom: 6,
+  },
+  label: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
