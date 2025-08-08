@@ -55,3 +55,4 @@ export const benefitCategories = [
   { BenefitCategory_num: 4, label: '문화 시설' },
   { BenefitCategory_num: 5, label: '기타' },
 ];
+//테스트용 주석
