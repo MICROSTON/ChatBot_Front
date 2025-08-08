@@ -1,16 +1,35 @@
-import React, { createContext, useContext, useState } from 'react';
+// src/context/LikeContext.js
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  getFavorites,
+  addFavorite,
+  removeFavorite
+} from '../services/LikeService';
 
 const LikeContext = createContext();
 
 export const LikeProvider = ({ children }) => {
   const [likedBenefits, setLikedBenefits] = useState([]);
+  const userId = 1; // ⚠️ 추후 실제 로그인한 사용자 ID로 교체
 
-  const toggleLike = (benefit) => {
+  useEffect(() => {
+    const fetchLikes = async () => {
+      const favorites = await getFavorites(userId);
+      setLikedBenefits(favorites);
+    };
+    fetchLikes();
+  }, []);
+
+  const toggleLike = async (benefit) => {
     const exists = likedBenefits.some(b => b.Benefit_Code === benefit.Benefit_Code);
     if (exists) {
-      setLikedBenefits(likedBenefits.filter(b => b.Benefit_Code !== benefit.Benefit_Code));
+      await removeFavorite(userId, benefit.Benefit_Code);
+      setLikedBenefits(prev =>
+        prev.filter(b => b.Benefit_Code !== benefit.Benefit_Code)
+      );
     } else {
-      setLikedBenefits([...likedBenefits, benefit]);
+      await addFavorite(userId, benefit.Benefit_Code);
+      setLikedBenefits(prev => [...prev, benefit]);
     }
   };
 
