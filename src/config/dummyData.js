@@ -27,7 +27,7 @@ export const welfareData = [
     Benefit_Code: 'prego-med-1',
     AgeGroup_num: 1,
     BenefitCategory_num: 2, // 의료
-    Benefit_name: '임신부 건강검진 지원',
+    Benefit_name: '임산부 건강검진 지원',
     Benefit_content: '국가에서 지원하는 임신 주기별 4회의 건강검진 비용을 전액 지원해 드립니다.',
     Benefit_condition: '임신 중 여성',
     Benefit_url: 'http://example.com/checkup',
