@@ -21,6 +21,7 @@ import AgeButtons from './AgeButtons';
 import WelfareButtons from './WelfareButtons';
 import WelfareCard from './WelfareCard';
 import { welfareData } from '../../config/dummyData';
+import { searchBenefits } from '../../services/chatService';
 
 const BG = require('../../../assets/images/background.png');
 const MASCOT = require('../../../assets/images/mascot.png');
@@ -37,6 +38,7 @@ export default function ChatScreen() {
   const [selectedBenefits, setSelectedBenefits] = useState([]);
   const [textInput, setTextInput] = useState('');
   const [showCallPopup, setShowCallPopup] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
   const scrollRef = useRef();
 
   const { likedBenefits, toggleLike } = useLike();
@@ -56,11 +58,12 @@ export default function ChatScreen() {
   const onSelectCategory = categoryObj => {
     setSelectedBenefitCategory(categoryObj);
     setSelectedBenefits([]);
-    setChatMessages(prev => [...prev, { from: 'user', text: categoryObj.label }]); // ✅ 수정됨
+    setChatMessages(prev => [...prev, { from: 'user', text: categoryObj.label }]);
   };
 
   const onSelectBenefit = benefit => {
     setSelectedBenefits(prev => [...prev, benefit]);
+    setSearchResults([]); // 항목 클릭 시 검색 결과 숨김
   };
 
   const filteredList =
@@ -71,6 +74,27 @@ export default function ChatScreen() {
             x.BenefitCategory_num === selectedBenefitCategory.BenefitCategory_num
         )
       : [];
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (textInput.trim().length > 0) {
+        handleSearch(textInput.trim());
+      } else {
+        setSearchResults([]);
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounce);
+  }, [textInput]);
+
+  const handleSearch = async (keyword) => {
+    try {
+      const results = await searchBenefits(keyword);
+      setSearchResults(results);
+    } catch (err) {
+      console.error('검색 실패:', err);
+      setSearchResults([]);
+    }
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -125,9 +149,7 @@ export default function ChatScreen() {
               key={i}
               style={[styles.bubble, m.from === 'user' ? styles.user : styles.bot]}
             >
-              <Text
-                style={m.from === 'user' ? styles.userText : styles.botText}
-              >
+              <Text style={m.from === 'user' ? styles.userText : styles.botText}>
                 {m.text}
               </Text>
             </View>
@@ -162,6 +184,26 @@ export default function ChatScreen() {
             );
           })}
         </ScrollView>
+
+        {searchResults.length > 0 && (
+          <View style={styles.searchOverlay}>
+            <ScrollView
+              style={styles.searchScroll}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+            >
+              {searchResults.slice(0, 20).map(item => (
+                <TouchableOpacity
+                  key={item.Benefit_Code}
+                  style={styles.searchItem}
+                  onPress={() => onSelectBenefit(item)}
+                >
+                  <Text style={styles.searchTitle}>{item.Benefit_name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {showCallPopup && (
           <View style={styles.callPopup}>
@@ -223,7 +265,14 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
   headerMascot: { width: 30, height: 30, marginRight: 8, resizeMode: 'contain' },
   headerName: { fontSize: 16, fontWeight: '600', color: '#000' },
-  phoneCircle: { backgroundColor: '#447473', width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  phoneCircle: {
+    backgroundColor: '#447473',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   phoneIcon: { width: 18, height: 18, tintColor: '#fff', resizeMode: 'contain' },
   scroll: { paddingTop: HEADER_HEIGHT + 10, paddingBottom: 20, paddingHorizontal: 20 },
   mascot: { width: 100, height: 100, alignSelf: 'center', marginBottom: 16 },
@@ -237,10 +286,56 @@ const styles = StyleSheet.create({
   detailTitle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
   detailBubble: { backgroundColor: '#C9EAEC', borderRadius: 12, padding: 12, marginTop: 12 },
   detailText: { fontSize: 14, color: '#000', lineHeight: 20 },
-  inputBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#6C889F', borderTopWidth: 1, borderColor: '#ccc' },
-  input: { flex: 1, backgroundColor: '#C7DCE4', color: '#333', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, marginRight: 10 },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#6C889F',
+    borderTopWidth: 1,
+    borderColor: '#ccc'
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#C7DCE4',
+    color: '#333',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginRight: 10
+  },
   sendBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   sendIcon: { width: 24, height: 24, resizeMode: 'contain' },
+  searchOverlay: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 64,
+    backgroundColor: '#B4CBCD',
+    borderRadius: 12,
+    maxHeight: 200,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+    zIndex: 1000,
+  },
+  searchScroll: {
+    flexGrow: 0,
+  },
+  searchItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+  },
+  searchTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+  },
   callPopup: {
     position: 'absolute',
     bottom: 70,
