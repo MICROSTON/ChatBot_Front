@@ -39,17 +39,21 @@ export const API_ENDPOINTS = {
     withdraw : "/user/delete/{userNum}" ,
   },
   welfare: {
-    like: '/welfare/likelist',               // 좋아요 복지 목록 조회(다시 지정 필요)
+    likes: {
+      getUserLikes: '/likes/{userId}',        // GET /likes/{userId}
+      addLike: '/likes/add',         // POST /likes/add
+      removeLike: '/likes/delete',   // DELETE /likes/delete
+    },
     bookmarks: {
       list: '/welfare/bookmarks/{id}',   // 북마크 목록 조회 (백엔드와 일치)
       add: '/welfare/bookmarks/add',     // 북마크 추가
       remove: '/welfare/bookmarks/remove', // 북마크 삭제
     },
   },
-  //chat 기능 엔드포인트 다시 지정 필요
   chat: {
-    send: '/chat/send',                  // 챗봇 메시지 전송
-    history: '/chat/history',            // 챗봇 대화 내역 조회
+    listSearch: '/shinhan/bokji/list-search',
+    ageSearch: '/shinhan/bokji/age-search', 
+    detail: '/shinhan/bokji/detail/{benefitCode}',
   }
 };
 
