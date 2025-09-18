@@ -5,7 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import { TouchableWithoutFeedback, Keyboard, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { initializeApp } from '@react-native-firebase/app';
 
 // Context Providers
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -218,16 +217,6 @@ const AppNavigator = () => {
 };
 
 export default function App() {
-  // Firebase 초기화
-  useEffect(() => {
-    try {
-      initializeApp();
-      console.log('Firebase 초기화 완료');
-    } catch (error) {
-      console.error('Firebase 초기화 오류:', error);
-    }
-  }, []);
-
   return (
     <AuthProvider>
       <BookmarkProvider>

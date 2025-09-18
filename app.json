@@ -8,8 +8,7 @@
     "android": {
       "package": "com.shinhan.chatbot",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true,
-      "googleServicesFile": "./android/google-services.json"
+      "edgeToEdgeEnabled": true
     },
     "plugins": [
       [
@@ -28,8 +27,7 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-font",
-      "@react-native-firebase/app"
+      "expo-font"
     ],
     "extra": {
       "eas": {
