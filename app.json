@@ -8,7 +8,8 @@
     "android": {
       "package": "com.shinhan.chatbot",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [
