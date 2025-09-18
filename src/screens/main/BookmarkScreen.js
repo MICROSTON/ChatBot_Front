@@ -4,8 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import NotificationCard from '../../components/NotificationCard';
-import { API_BASE_URL } from '../../../config/config';
+import { CONFIG } from '../../../config/config';
 import dummyNotifications from '../../../config/dummyNotifications';
 import { BookmarkContext } from '../../context/BookmarkContext';
 import { AuthContext } from '../../context/AuthContext';
@@ -20,7 +21,7 @@ const CATEGORIES = [
   { ageGroupNum: 7, label: '장애인' },
 ];
 
-const MAX_SELECTIONS = 3;
+// const MAX_SELECTIONS = 3; // 개수 제한 제거
 const STORAGE_KEY = 'notification_categories';
 
 // 알림 설정
@@ -37,6 +38,7 @@ const BookmarkScreen = ({ navigation }) => {
   const [selectedCount, setSelectedCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [userNum, setUserNum] = useState(null);
+  const [isNotificationEnabled, setIsNotificationEnabled] = useState(true);
   
   // Context 사용
   const { addBookmark, removeBookmark, bookmarks, error: bookmarkError } = useContext(BookmarkContext);
@@ -94,6 +96,7 @@ const BookmarkScreen = ({ navigation }) => {
     loadCategories();
     checkNotificationPermissions();
     fetchNotifications();
+    fetchNotificationStatus();
     
     // 로그인된 사용자 정보 설정
     if (userInfo?.id) {
@@ -102,7 +105,7 @@ const BookmarkScreen = ({ navigation }) => {
   }, [userInfo, bookmarks]);
 
   const checkNotificationPermissions = async () => {
-    if (!Constants.isDevice) {
+    if (!Device.isDevice) {
       console.log('실제 기기가 아니므로 알림을 사용할 수 없습니다.');
       return;
     }
@@ -122,7 +125,7 @@ const BookmarkScreen = ({ navigation }) => {
   };
 
   const registerForPushNotifications = async () => {
-    if (!Constants.isDevice) {
+    if (!Device.isDevice) {
       Alert.alert('알림', '실제 기기에서만 푸시 알림을 사용할 수 있습니다.');
       return null;
     }
@@ -141,12 +144,25 @@ const BookmarkScreen = ({ navigation }) => {
     }
 
     try {
-      const tokenData = await Notifications.getExpoPushTokenAsync();
+      // EAS 빌드에서는 projectId를 명시적으로 지정해야 함
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      console.log('Project ID:', projectId);
+      
+      if (!projectId) {
+        console.error('Project ID가 설정되지 않았습니다.');
+        Alert.alert('오류', '앱 설정에 문제가 있습니다. 개발자에게 문의하세요.');
+        return null;
+      }
+
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: projectId
+      });
       const token = tokenData.data;
-      console.log('Push Token:', token);
+      console.log('Push Token 획득 성공:', token);
       return token;
     } catch (error) {
       console.error('푸시 토큰 획득 오류:', error);
+      Alert.alert('오류', '푸시 알림 토큰을 가져올 수 없습니다: ' + error.message);
       return null;
     }
   };
@@ -158,17 +174,24 @@ const BookmarkScreen = ({ navigation }) => {
         .filter(([_, isSelected]) => isSelected)
         .map(([ageGroupNum]) => Number(ageGroupNum));
 
-      const response = await fetch(`${API_BASE_URL}/notifications/register`, {
+      console.log('선택된 연령대:', selectedAgeGroupNums);
+      console.log('사용자 ID:', userNum);
+
+      const response = await fetch(`${CONFIG.apiUrl}/notification/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          userId: userNum,
           pushToken: token,
-          userNum,
-          ageGroupNums: selectedAgeGroupNums
+          ageGroups: selectedAgeGroupNums
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const result = await response.json();
       console.log('서버 응답:', result);
@@ -176,14 +199,14 @@ const BookmarkScreen = ({ navigation }) => {
       Alert.alert('알림', '카테고리 알림 설정이 저장되었습니다.');
     } catch (error) {
       console.error('서버 전송 오류:', error);
-      Alert.alert('오류', '카테고리 설정 저장 중 문제가 발생했습니다.');
+      Alert.alert('오류', '카테고리 설정 저장 중 문제가 발생했습니다: ' + error.message);
     }
   };
 
   // 서버에서 알림 리스트 받아오기
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/notifications/list`, {
+      const response = await fetch(`${CONFIG.apiUrl}/notifications/list`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -243,14 +266,9 @@ const BookmarkScreen = ({ navigation }) => {
 
     // 현재 선택되어 있지 않다면 -> 선택 시도 (북마크 추가)
     console.log('-> 선택 시도 (북마크 추가)');
-    console.log('현재 selectedCount:', selectedCount, 'MAX_SELECTIONS:', MAX_SELECTIONS);
+    console.log('현재 selectedCount:', selectedCount);
     
-    // 이미 최대 개수에 도달했는지 확인
-    if (selectedCount >= MAX_SELECTIONS) {
-      console.log('-> 최대 개수 도달, 선택 불가');
-      Alert.alert('알림', `최대 ${MAX_SELECTIONS}개 카테고리만 선택할 수 있습니다.`);
-      return;
-    }
+    // 개수 제한 제거됨 - 무제한 선택 가능
 
     // 선택 가능한 경우 - 북마크 추가
     console.log('-> 선택 가능, 북마크 추가 중');
@@ -287,13 +305,86 @@ const BookmarkScreen = ({ navigation }) => {
 
   const saveCategories = async (categories) => {
     try {
+      console.log('=== 카테고리 저장 시작 ===');
+      console.log('저장할 카테고리:', categories);
+      
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
+      console.log('AsyncStorage에 카테고리 저장 완료');
+      
+      // 푸시 알림 토큰 등록 및 서버 전송
+      console.log('푸시 알림 토큰 등록 시작...');
       const token = await registerForPushNotifications();
+      
       if (token) {
-        await sendCategorySelectionToServer(token, categories);
+        console.log('푸시 토큰 획득 성공:', token.substring(0, 20) + '...');
+        
+        if (userInfo?.id) {
+          console.log('사용자 ID 확인됨:', userInfo.id);
+          console.log('서버로 푸시 알림 설정 전송 시작...');
+          await sendCategorySelectionToServer(token, categories);
+        } else {
+          console.error('사용자 ID가 없어서 서버 전송을 건너뜀');
+        }
+      } else {
+        console.error('푸시 토큰을 획득할 수 없음');
+        Alert.alert('알림', '푸시 알림 토큰을 획득할 수 없습니다. 알림 권한을 확인해주세요.');
       }
+      
+      console.log('=== 카테고리 저장 완료 ===');
     } catch (error) {
       console.error('카테고리 저장 오류:', error);
+      Alert.alert('오류', '카테고리 설정 저장 중 문제가 발생했습니다: ' + error.message);
+    }
+  };
+
+  // 알람 토글 처리
+  const toggleNotification = async () => {
+    try {
+      if (!userInfo?.id) {
+        Alert.alert('오류', '로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await fetch(`${CONFIG.apiUrl}/notification/toggle/${userInfo.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // 서버에서 Map<String, Object>를 반환하므로 result.isActive로 접근
+        setIsNotificationEnabled(result.isActive);
+        Alert.alert('알림', result.message);
+      } else {
+        Alert.alert('오류', '알림 설정 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('알람 토글 오류:', error);
+      Alert.alert('오류', '알림 설정 변경 중 문제가 발생했습니다.');
+    }
+  };
+
+  // 현재 알람 설정 상태 조회
+  const fetchNotificationStatus = async () => {
+    try {
+      if (!userInfo?.id) return;
+
+      const response = await fetch(`${CONFIG.apiUrl}/notification/${userInfo.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // 서버에서 PushNotificationResponseDto를 직접 반환하므로 result.isActive로 접근
+        setIsNotificationEnabled(result.isActive ?? true);
+      }
+    } catch (error) {
+      console.error('알람 상태 조회 오류:', error);
     }
   };
 
@@ -330,8 +421,20 @@ const BookmarkScreen = ({ navigation }) => {
               defaultSource={require('../../../assets/images/logo.png')}
             />
             <Text style={styles.instructionText}>
-              알림 받고 싶은 카테고리를 3개 선택하세요
+              알림 받고 싶은 카테고리를 선택하세요
             </Text>
+          </View>
+
+          {/* 알람 온오프 토글 */}
+          <View style={styles.notificationToggleContainer}>
+            <Text style={styles.notificationToggleLabel}>푸시 알림</Text>
+            <Switch
+              trackColor={{ false: '#E0E0E0', true: '#A8E0D9' }}
+              thumbColor={isNotificationEnabled ? '#55B7B5' : '#f4f3f4'}
+              ios_backgroundColor="#E0E0E0"
+              onValueChange={toggleNotification}
+              value={isNotificationEnabled}
+            />
           </View>
 
           <View style={styles.categoryContainer}>
@@ -498,6 +601,20 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  notificationToggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  notificationToggleLabel: {
+    fontSize: 16,
+    color: '#333',
   },
 });
 

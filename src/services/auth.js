@@ -23,93 +23,139 @@ const generateDummyJWT = (id) => {
 };
 
 let apiClient = null;
-console.log('CONFIG 확인:', CONFIG);
-console.log('useDummyData 확인:', CONFIG ? CONFIG.useDummyData : 'CONFIG가 없음');
 
-try {
-  if (CONFIG && CONFIG.apiUrl) {
-    apiClient = axios.create({
-      baseURL: CONFIG.apiUrl,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: CONFIG.timeout || 10000,
-    });
+// CONFIG가 로드되었는지 확인
+if (typeof CONFIG !== 'undefined') {
+  console.log('CONFIG 확인:', CONFIG);
+  console.log('useDummyData 확인:', CONFIG ? CONFIG.useDummyData : 'CONFIG가 없음');
 
-    apiClient.interceptors.request.use(
-      async (config) => {
-        const token = await getAuthToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+  try {
+    if (CONFIG && CONFIG.apiUrl) {
+      apiClient = axios.create({
+        baseURL: CONFIG.apiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: CONFIG.timeout || 10000,
+      });
+
+      apiClient.interceptors.request.use(
+        async (config) => {
+          const token = await getAuthToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+          return config;
+        },
+        (error) => {
+          return Promise.reject(error);
         }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
+      );
 
-    console.log('API 클라이언트 초기화 성공:', CONFIG.apiUrl);
-  } else {
-    console.log('API URL이 설정되지 않아 더미 데이터 모드로 동작합니다');
+      // 응답 인터셉터 - 토큰 만료 시 자동 갱신
+      apiClient.interceptors.response.use(
+        (response) => {
+          return response;
+        },
+        async (error) => {
+          const originalRequest = error.config;
+          
+          if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            
+            try {
+              // 저장된 refresh token으로 토큰 갱신 시도
+              const refreshToken = await AsyncStorage.getItem('refreshToken');
+              if (refreshToken) {
+                const reissueResponse = await reissueToken(refreshToken);
+                if (reissueResponse.success) {
+                  // 새로운 토큰으로 원래 요청 재시도
+                  const newToken = await getAuthToken();
+                  originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                  return apiClient(originalRequest);
+                }
+              }
+            } catch (reissueError) {
+              console.error('토큰 갱신 실패:', reissueError);
+            }
+          }
+          
+          return Promise.reject(error);
+        }
+      );
+
+      console.log('API 클라이언트 초기화 성공:', CONFIG.apiUrl);
+    } else {
+      console.log('API URL이 설정되지 않아 더미 데이터 모드로 동작합니다');
+    }
+  } catch (error) {
+    console.error('API 클라이언트 초기화 오류:', error);
   }
-} catch (error) {
-  console.error('API 클라이언트 초기화 오류:', error);
+} else {
+  console.log('CONFIG가 아직 로드되지 않았습니다. 더미 데이터 모드로 동작합니다.');
 }
 
 // 로그인 함수
 export const login = async (id, pw) => {
-  console.log('login 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
+  console.log('login 호출됨 - 실제 API 모드');
 
   try {
-    if (CONFIG?.useDummyData === true || !apiClient) {
-      console.log('더미 데이터로 로그인 시도...');
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const user = DUMMY_USERS.find(
-        u => u.id === id && u.pw === pw
-      );
-      if (user) {
-        const token = generateDummyJWT(id);
-        const { pw, ...userInfo } = user;
+    // 더미데이터 모드 완전 비활성화
+    if (!apiClient) {
+      console.log('API 클라이언트가 초기화되지 않았습니다.');
+      return {
+        success: false,
+        message: '서버 연결에 실패했습니다. 네트워크를 확인해주세요.'
+      };
+    }
+
+    console.log('실제 API로 로그인 시도');
+    console.log('요청 데이터:', { id, pw });
+    try {
+      const response = await apiClient.post('/auth/login', { id, pw });
+      console.log('백엔드 로그인 응답:', response.data);
+      
+      // 백엔드 응답 구조에 맞게 변환
+      const transformedResponse = {
+        success: true,
+        data: {
+          token: response.data.tokenDto?.accessToken,
+          user: {
+            id: id,
+            userNum: response.data.userNum, // 백엔드에서 제공하는 userNum
+          },
+          message: response.data.message
+        }
+      };
+      
+      console.log('변환된 응답:', transformedResponse);
+      return transformedResponse;
+    } catch (apiError) {
+      console.error('로그인 API 요청 실패:', apiError.response?.status, apiError.response?.data);
+      
+      // 백엔드 에러 응답 처리
+      if (apiError.response?.status === 400) {
+        // 백엔드에서 반환하는 구체적인 오류 메시지 사용
+        const errorMessage = apiError.response.data?.message || '로그인 정보가 올바르지 않습니다.';
         return {
-          success: true,
-          data: {
-            token,
-            user: userInfo,
-            message: '로그인 성공'
-          }
+          success: false,
+          message: errorMessage
         };
-      } else {
+      } else if (apiError.response?.status === 401) {
         return {
           success: false,
           message: '아이디 또는 비밀번호가 일치하지 않습니다.'
         };
-      }
-    } else {
-      console.log('실제 API로 로그인 시도');
-      console.log('요청 데이터:', { id, pw });
-      try {
-        const response = await apiClient.post('/auth/login', { id, pw });
-        console.log('백엔드 로그인 응답:', response.data);
-        
-        // 백엔드 응답을 프론트엔드 형식에 맞게 변환
-        const transformedResponse = {
-          success: true, // 로그인 성공 시 항상 true
-          data: {
-            token: response.data.tokenDto?.accessToken,
-            user: {
-              id: id, // 로그인한 아이디
-              // 추가 사용자 정보는 필요시 백엔드에서 제공해야 함
-            }
-          },
-          message: response.data.message
+      } else if (apiError.code === 'ECONNREFUSED' || apiError.code === 'NETWORK_ERROR') {
+        return {
+          success: false,
+          message: '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
         };
-        
-        console.log('변환된 응답:', transformedResponse);
-        return transformedResponse;
-      } catch (apiError) {
-        console.error('로그인 API 요청 실패:', apiError.response?.status, apiError.response?.data);
-        throw apiError;
+      } else {
+        return {
+          success: false,
+          message: '로그인 중 오류가 발생했습니다: ' + (apiError.message || '알 수 없는 오류')
+        };
       }
     }
   } catch (error) {
@@ -123,34 +169,33 @@ export const login = async (id, pw) => {
 
 // 회원가입 함수
 export const signup = async (userData) => {
-  console.log('signup 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
+  console.log('signup 호출됨 - 실제 API 모드');
 
   try {
-    if (CONFIG?.useDummyData === true || !apiClient) {
-      console.log('더미 데이터로 회원가입 처리...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const isDuplicate = DUMMY_USERS.some(user => user.id === userData.id);
-      if (isDuplicate) {
-        return {
-          success: false,
-          message: '이미 사용 중인 아이디입니다.'
-        };
-      }
+    // 더미데이터 모드 완전 비활성화
+    if (!apiClient) {
+      console.log('API 클라이언트가 초기화되지 않았습니다.');
       return {
-        success: true,
-        data: {
-          message: '회원가입이 완료되었습니다.'
-        }
+        success: false,
+        message: '서버 연결에 실패했습니다. 네트워크를 확인해주세요.'
       };
-    } else {
-      console.log('실제 API로 회원가입 시도');
-      // userData는 반드시 아래 변수명으로 구성되어야 함
-      // { id, pw, name, phone, birth, homeMember, income, address }
-      const response = await apiClient.post('/auth/signup', userData);
-      return response.data;
     }
+
+    console.log('실제 API로 회원가입 시도');
+    // userData는 반드시 아래 변수명으로 구성되어야 함
+    // { id, pw, name, phone, birth, homeMember, income, address }
+    const response = await apiClient.post('/auth/signup', userData);
+    return response.data;
   } catch (error) {
     console.error('회원가입 오류:', error);
+    
+    if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
+      return {
+        success: false,
+        message: '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
+      };
+    }
+    
     return {
       success: false,
       message: '회원가입 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류')
@@ -164,7 +209,7 @@ export const logout = async () => {
     await AsyncStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     await AsyncStorage.removeItem(STORAGE_KEYS.USER_INFO);
 
-    if (CONFIG?.useDummyData === true || !apiClient) {
+    if ((CONFIG && CONFIG.useDummyData === true) || !apiClient) {
       console.log('더미 데이터 모드로 로그아웃 처리');
       return { success: true };
     } else {
@@ -183,35 +228,40 @@ export const logout = async () => {
 
 // 아이디 찾기
 export const findId = async (name, phone) => {
-  console.log('findId 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
+  console.log('findId 호출됨 - 실제 API 모드');
 
   try {
-    if (CONFIG?.useDummyData === true || !apiClient) {
-      console.log('더미 데이터로 아이디 찾기...');
-      console.log('입력한 name:', name);
-      console.log('입력한 phone:', phone);
-      const user = DUMMY_USERS.find(
-        u => u.name === name && u.phone === phone
-      );
-      await new Promise(resolve => setTimeout(resolve, 500));
-      if (user) {
-        return {
-          success: true,
-          data: {
-            id: user.id,
-            message: '아이디를 찾았습니다.'
-          }
-        };
-      } else {
+    // 더미데이터 모드 완전 비활성화
+    if (!apiClient) {
+      console.log('API 클라이언트가 초기화되지 않았습니다.');
+      return {
+        success: false,
+        message: '서버 연결에 실패했습니다. 네트워크를 확인해주세요.'
+      };
+    }
+
+    console.log('실제 API로 아이디 찾기 시도');
+    console.log('요청 데이터:', { name, phone });
+    try {
+      const response = await apiClient.post('/auth/find-id', { name, phone });
+      console.log('백엔드 응답:', response.data);
+      return response.data;
+    } catch (apiError) {
+      console.error('아이디 찾기 API 요청 실패:', apiError.response?.status, apiError.response?.data);
+      
+      if (apiError.response?.status === 400) {
         return {
           success: false,
-          message: '입력하신 정보와 일치하는 사용자가 없습니다.'
+          message: apiError.response.data?.message || '입력하신 정보와 일치하는 사용자가 없습니다.'
         };
+      } else if (apiError.code === 'ECONNREFUSED' || apiError.code === 'NETWORK_ERROR') {
+        return {
+          success: false,
+          message: '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
+        };
+      } else {
+        throw apiError;
       }
-    } else {
-      console.log('실제 API로 아이디 찾기 시도');
-      const response = await apiClient.post('/auth/find-id', { name, phone });
-      return response.data;
     }
   } catch (error) {
     console.error('아이디 찾기 오류:', error);
@@ -224,45 +274,40 @@ export const findId = async (name, phone) => {
 
 // 비밀번호 찾기
 export const findPassword = async (id, phone) => {
-  console.log('findPassword 호출됨 - 더미데이터 모드:', CONFIG?.useDummyData);
+  console.log('findPassword 호출됨 - 실제 API 모드');
   console.log('입력된 id:', id);
   console.log('입력된 phone:', phone);
 
   try {
-    if (CONFIG?.useDummyData === true || !apiClient) {
-      console.log('더미 데이터로 비밀번호 찾기...');
-      console.log('DUMMY_USERS:', DUMMY_USERS);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const user = DUMMY_USERS.find(
-        u => u.id === id && u.phone === phone
-      );
-      console.log('찾은 사용자:', user);
-      if (user) {
-        console.log('비밀번호 찾기 성공:', user.pw);
-        return {
-          success: true,
-          data: {
-            password: user.pw, // 백엔드와 동일한 키 사용
-            pw: user.pw, // 기존 호환성 유지
-            message: '비밀번호를 찾았습니다.'
-          }
-        };
-      } else {
-        console.log('일치하는 사용자 없음');
+    // 더미데이터 모드 완전 비활성화
+    if (!apiClient) {
+      console.log('API 클라이언트가 초기화되지 않았습니다.');
+      return {
+        success: false,
+        message: '서버 연결에 실패했습니다. 네트워크를 확인해주세요.'
+      };
+    }
+
+    console.log('실제 API로 비밀번호 찾기 시도');
+    console.log('요청 데이터:', { id, phone });
+    try {
+      const response = await apiClient.post('/auth/find-password', { id, phone });
+      console.log('백엔드 응답:', response.data);
+      return response.data;
+    } catch (apiError) {
+      console.error('비밀번호 찾기 API 요청 실패:', apiError.response?.status, apiError.response?.data);
+      
+      if (apiError.response?.status === 400) {
         return {
           success: false,
-          message: '입력하신 정보와 일치하는 사용자가 없습니다.'
+          message: apiError.response.data?.message || '입력하신 정보와 일치하는 사용자가 없습니다.'
         };
-      }
-    } else {
-      console.log('실제 API로 비밀번호 찾기 시도');
-      console.log('요청 데이터:', { id, phone });
-      try {
-        const response = await apiClient.post('/auth/find-password', { id, phone });
-        console.log('백엔드 응답:', response.data);
-        return response.data;
-      } catch (apiError) {
-        console.error('API 요청 실패:', apiError.response?.status, apiError.response?.data);
+      } else if (apiError.code === 'ECONNREFUSED' || apiError.code === 'NETWORK_ERROR') {
+        return {
+          success: false,
+          message: '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
+        };
+      } else {
         throw apiError;
       }
     }
@@ -286,39 +331,38 @@ export const checkIdDuplicate = async (id) => {
 
   const trimmedId = id.trim();
   console.log('중복 확인 요청 아이디:', trimmedId);
-  console.log('DUMMY_USERS 목록:', DUMMY_USERS.map(u => u.id));
 
   try {
-    if (CONFIG?.useDummyData === true || !apiClient) {
-      console.log('더미 데이터로 아이디 중복 확인 중...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const isDuplicate = DUMMY_USERS.some(
-        user => user.id.toLowerCase() === trimmedId.toLowerCase()
-      );
-      console.log('중복 여부 결과:', isDuplicate);
+    // 더미데이터 모드 완전 비활성화
+    if (!apiClient) {
+      console.log('API 클라이언트가 초기화되지 않았습니다.');
       return {
-        success: true,
-        data: {
-          available: !isDuplicate,
-          message: isDuplicate ? '이미 사용 중인 아이디입니다.' : '사용 가능한 아이디입니다.'
-        }
+        success: false,
+        message: '서버 연결에 실패했습니다. 네트워크를 확인해주세요.'
       };
-    } else {
-      console.log('실제 API로 아이디 중복 확인 시도');
-      // 파라미터명 id로 변경
-      const response = await apiClient.get('/auth/check-id', { params: { id: trimmedId } });
-
-return {
-  success: true,
-  data: {
-    available: response.data.available,
-    message: response.data.message
-  }
-};
-
     }
+
+    console.log('실제 API로 아이디 중복 확인 시도');
+    // 파라미터명 id로 변경
+    const response = await apiClient.get('/auth/check-id', { params: { id: trimmedId } });
+
+    return {
+      success: true,
+      data: {
+        available: response.data.available,
+        message: response.data.message
+      }
+    };
   } catch (error) {
     console.error('아이디 중복 확인 오류:', error);
+    
+    if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
+      return {
+        success: false,
+        message: '서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요.'
+      };
+    }
+    
     return {
       success: false,
       message: '요청 처리 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류')
@@ -388,5 +432,43 @@ export const getUserSettings = async () => {
   } catch (error) {
     console.error('설정 불러오기 오류:', error);
     return null;
+  }
+};
+
+// JWT 토큰 갱신
+export const reissueToken = async (refreshToken) => {
+  try {
+    if (!apiClient) {
+      console.log('API 클라이언트가 초기화되지 않았습니다.');
+      return {
+        success: false,
+        message: '서버 연결에 실패했습니다. 네트워크를 확인해주세요.'
+      };
+    }
+
+    console.log('JWT 토큰 갱신 시도');
+    const response = await apiClient.post('/auth/reissue', {
+      refreshToken: refreshToken
+    });
+
+    if (response.data.success) {
+      console.log('토큰 갱신 성공');
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } else {
+      console.log('토큰 갱신 실패:', response.data.message);
+      return {
+        success: false,
+        message: response.data.message
+      };
+    }
+  } catch (error) {
+    console.error('토큰 갱신 오류:', error);
+    return {
+      success: false,
+      message: '토큰 갱신 중 오류가 발생했습니다.'
+    };
   }
 };

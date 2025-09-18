@@ -11,6 +11,22 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
+// 날짜 포맷팅 함수
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  } catch (error) {
+    console.error('날짜 포맷팅 오류:', error);
+    return dateString;
+  }
+};
+
 const BG = require('../../../assets/images/background2.png'); 
 
 export default function FavoriteDetailScreen({ route }) {
@@ -46,10 +62,10 @@ export default function FavoriteDetailScreen({ route }) {
         {/* 복지 내용 박스 */}
         <View style={styles.contentBox}>
           <Text style={styles.contentText}>
-            {item.benefitContext}
+            {item.benefitContext || '복지 상세 정보가 없습니다.'}
             {item.benefitCondition && `\n\n신청 조건: ${item.benefitCondition}`}
             {item.benefitStartDate && item.benefitEndDate && 
-              `\n\n신청 기간: ${item.benefitStartDate} ~ ${item.benefitEndDate}`}
+              `\n\n신청 기간: ${formatDate(item.benefitStartDate)} ~ ${formatDate(item.benefitEndDate)}`}
             {item.benefitUrl && `\n\n관련 링크: ${item.benefitUrl}`}
           </Text>
         </View>

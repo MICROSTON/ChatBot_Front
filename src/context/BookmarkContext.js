@@ -21,7 +21,7 @@ export const BookmarkProvider = ({ children }) => {
         setLoading(true);
         setError(null);
 
-        if (isConnected && !CONFIG.useDummyData) {
+        if (isConnected && !(CONFIG && CONFIG.useDummyData)) {
           // 로그인된 사용자 ID 사용
           const userId = userInfo?.id || "test_user";
           console.log('북마크 조회 사용자 ID:', userId);
@@ -116,7 +116,7 @@ export const BookmarkProvider = ({ children }) => {
 
     if (!exists) {
       try {
-        if (isConnected && !CONFIG.useDummyData) {
+        if (isConnected && !(CONFIG && CONFIG.useDummyData)) {
           // 서버에 북마크 추가
           await addBookmarkToServer({ userNum: actualUserNum, ageGroupNum });
           console.log('서버에 북마크 추가 성공');
@@ -163,7 +163,7 @@ export const BookmarkProvider = ({ children }) => {
   // 북마크 제거 - userNum, ageGroupNum 기반으로 제거
   const removeBookmark = async ({ userNum, ageGroupNum }) => {
     try {
-      if (isConnected && !CONFIG.useDummyData) {
+      if (isConnected && !(CONFIG && CONFIG.useDummyData)) {
         // 서버에서 북마크 삭제
         await removeBookmarkFromServer({ userNum, ageGroupNum });
         console.log('서버에서 북마크 삭제 성공');
@@ -220,4 +220,12 @@ export const BookmarkProvider = ({ children }) => {
       {children}
     </BookmarkContext.Provider>
   );
+};
+
+export const useBookmarks = () => {
+  const context = useContext(BookmarkContext);
+  if (!context) {
+    throw new Error('useBookmarks는 BookmarkProvider 내부에서만 사용할 수 있습니다.');
+  }
+  return context;
 };

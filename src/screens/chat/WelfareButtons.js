@@ -1,20 +1,22 @@
 import React from 'react'; 
 import { View, TouchableOpacity, Text, Image, StyleSheet } from 'react-native';
 
-// import 제거하고, 로컬 categories만 사용
+// 백엔드 API에서 받은 카테고리 데이터를 사용
 const categories = [
-  { benefitCategoryNum: 1, name: '경제', icon: require('../../../assets/images/economy.png') },
-  { benefitCategoryNum: 2, name: '의료', icon: require('../../../assets/images/medical.png') },
-  { benefitCategoryNum: 3, name: '교육', icon: require('../../../assets/images/education.png') },
-  { benefitCategoryNum: 4, name: '문화 시설', icon: require('../../../assets/images/culture.png') },
-  { benefitCategoryNum: 5, name: '기타', icon: require('../../../assets/images/etc.png') },
+  { benefitCategoryNum: 10, name: '경제', icon: require('../../../assets/images/economy.png') },
+  { benefitCategoryNum: 20, name: '의료', icon: require('../../../assets/images/medical.png') },
+  { benefitCategoryNum: 30, name: '문화시설', icon: require('../../../assets/images/culture.png') },
+  { benefitCategoryNum: 40, name: '교육', icon: require('../../../assets/images/education.png') },
+  { benefitCategoryNum: 50, name: '기타', icon: require('../../../assets/images/etc.png') },
 ];
 
-export default function WelfareButtons({ onSelect }) {
+export default function WelfareButtons({ onSelect, customCategories }) {
+  // customCategories가 있으면 사용, 없으면 기본 카테고리 사용
+  const displayCategories = customCategories || categories;
+  
   return (
     <View style={styles.container}>
-      {/* categoryData 대신 categories 사용 */}
-      {categories.map((item, i) => (
+      {displayCategories.map((item, i) => (
         <TouchableOpacity
           key={i}
           style={styles.button}

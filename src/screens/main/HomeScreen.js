@@ -1,12 +1,41 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function HomeScreen({ navigation,route, onShowGuide, onMount }) {
+export default function HomeScreen({ navigation, route, onShowGuide, onMount }) {
   useEffect(() => {
-    if (route.params?.showGuide === true  || route.params === undefined) {
-    onShowGuide();
-  }
-}, [route.params?.showGuide]);
+    console.log('HomeScreen 마운트 - route.params:', route.params);
+    if (route.params?.showGuide === true || route.params === undefined) {
+      console.log('HomeScreen에서 onMount 호출');
+      onMount();
+    }
+    
+    // 푸시 알림 클릭으로 인한 화면 이동 처리
+    checkPendingNotification();
+  }, [route.params?.showGuide, onMount]);
+
+  const checkPendingNotification = async () => {
+    try {
+      const pendingNotification = await AsyncStorage.getItem('pendingNotification');
+      if (pendingNotification) {
+        const notificationData = JSON.parse(pendingNotification);
+        console.log('대기 중인 알림 처리:', notificationData);
+        
+        // AsyncStorage에서 제거
+        await AsyncStorage.removeItem('pendingNotification');
+        
+        // 해당 화면으로 이동
+        if (notificationData.screen === 'Chat' && notificationData.params?.ageGroupNum) {
+          navigation.navigate('Chat', { 
+            selectedAgeGroup: notificationData.params.ageGroupNum 
+          });
+        }
+      }
+    } catch (error) {
+      console.error('대기 중인 알림 처리 오류:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* 헤더 */}

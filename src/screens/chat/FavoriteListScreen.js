@@ -10,13 +10,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons'; 
+import { FontAwesome } from '@expo/vector-icons';
 import { useLike } from '../../context/LikeContext';
 import SwipeableListItem from './SwipeableListItem';
 
 const BG = require('../../../assets/images/background2.png');
 
 export default function FavoriteListScreen() {
-  const { likedBenefits, removeLike } = useLike();
+  const { likedBenefits, removeLike, loading } = useLike();
   const navigation = useNavigation();
 
   const handleDelete = (item) => {
@@ -34,15 +35,58 @@ export default function FavoriteListScreen() {
     );
   };
 
+  const handleHeartPress = (item) => {
+    Alert.alert(
+      '좋아요 취소',
+      '좋아요를 취소하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        { 
+          text: '취소', 
+          style: 'destructive',
+          onPress: () => removeLike(item)
+        }
+      ]
+    );
+  };
+
   const renderItem = ({ item }) => (
     <SwipeableListItem onDelete={() => handleDelete(item)}>
-      <TouchableOpacity
-        style={styles.cardWrapper}
-        onPress={() => navigation.navigate('FavoriteDetail', { item })}
-      >
-        <Text style={styles.title}>{item.benefitName}</Text>
-      </TouchableOpacity>
+      <View style={styles.cardWrapper}>
+        <TouchableOpacity
+          style={styles.cardContent}
+          onPress={() => navigation.navigate('FavoriteDetail', { item })}
+        >
+          <Text style={styles.title}>{item.benefitName || '제목 없음'}</Text>
+          {item.benefitContext && (
+            <Text style={styles.subtitle} numberOfLines={2}>
+              {item.benefitContext}
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.heartButton}
+          onPress={() => handleHeartPress(item)}
+        >
+          <FontAwesome
+            name="heart"
+            size={24}
+            color="#FF3366"
+          />
+        </TouchableOpacity>
+      </View>
     </SwipeableListItem>
+  );
+
+  const renderEmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>
+        {loading ? '좋아요 목록을 불러오는 중...' : '아직 좋아요한 복지가 없습니다.'}
+      </Text>
+      <Text style={styles.emptySubText}>
+        복지 검색에서 마음에 드는 복지를 좋아요 해보세요!
+      </Text>
+    </View>
   );
 
   return (
@@ -69,15 +113,11 @@ export default function FavoriteListScreen() {
       {/* 바디 */}
       <FlatList
         data={likedBenefits}
-        keyExtractor={(item) => item.benefitCode.toString()}
+        keyExtractor={(item) => (item?.benefitCode?.toString() || item?.id?.toString() || Math.random().toString())}
         renderItem={renderItem}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>좋아요한 항목이 없습니다.</Text>
-        }
-        contentContainerStyle={
-          likedBenefits.length === 0 ? styles.emptyContainer : undefined
-        }
+        ListEmptyComponent={renderEmptyList}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
       />
     </ImageBackground>
   );
@@ -127,14 +167,29 @@ const styles = StyleSheet.create({
   },
   
   cardWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 18,
     backgroundColor: '#FFFFFF',
+  },
+  cardContent: {
+    flex: 1,
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000000',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666666',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  heartButton: {
+    padding: 8,
+    marginLeft: 10,
   },
   separator: {
     height: 1,
@@ -145,9 +200,20 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 50,
   },
   emptyText: {
     color: '#888888',
     fontSize: 16,
+    textAlign: 'center',
+  },
+  emptySubText: {
+    color: '#AAAAAA',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  listContainer: {
+    paddingBottom: 20,
   },
 });

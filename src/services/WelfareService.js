@@ -30,41 +30,89 @@ class WelfareService {
     }));
   }
 
-  // 복지 목록 검색 - /shinhan/bokji/list-search
+  // 복지 목록 검색 - /shinhan/bokji/search
   async searchWelfareList(searchParams = {}) {
     try {
-      if (CONFIG.useDummyData) {
-        return this.filterDummyData(searchParams);
+      if (CONFIG && CONFIG.useDummyData === true) {
+        console.log('더미 데이터로 복지 검색');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return {
+          success: true,
+          data: [
+            {
+              benefitCode: 'B001',
+              benefitName: '청년 구직활동지원금',
+              benefitCategory: '취업지원',
+              description: '청년들의 구직활동을 지원하는 프로그램입니다.',
+              eligibility: '만 18-34세 청년',
+              applicationMethod: '온라인 신청',
+              contactInfo: '02-1234-5678'
+            },
+            {
+              benefitCode: 'B002',
+              benefitName: '저소득층 의료비 지원',
+              benefitCategory: '의료지원',
+              description: '저소득층의 의료비를 지원하는 프로그램입니다.',
+              eligibility: '기초생활수급자',
+              applicationMethod: '구청 방문 신청',
+              contactInfo: '02-2345-6789'
+            }
+          ]
+        };
+      } else {
+        // 백엔드 API 구조에 맞게 파라미터 변환
+        const params = new URLSearchParams();
+        if (searchParams.ageGroupNum) {
+          params.append('ageGroupNum', searchParams.ageGroupNum);
+        }
+        if (searchParams.benefitCategoryNum) {
+          params.append('categoryNum', searchParams.benefitCategoryNum);
+        }
+        // 페이지네이션 파라미터 추가
+        if (searchParams.page !== undefined) {
+          params.append('page', searchParams.page);
+        }
+        if (searchParams.size !== undefined) {
+          params.append('size', searchParams.size);
+        }
+
+        const url = `${this.baseURL}/shinhan/bokji/search${params.toString() ? `?${params.toString()}` : ''}`;
+        console.log('복지 검색 요청 URL:', url);
+
+        // React Native에서 지원하는 방식으로 타임아웃 설정
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const rawData = await response.json();
+        console.log('복지 검색 응답:', rawData);
+        
+        const transformedData = this.transformApiResponse(rawData);
+
+        return {
+          success: true,
+          data: transformedData,
+          total: transformedData.length
+        };
       }
-
-      const queryParams = new URLSearchParams(searchParams).toString();
-      const url = `${this.baseURL}/shinhan/bokji/list-search${queryParams ? `?${queryParams}` : ''}`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(this.timeout)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      const transformedData = this.transformApiResponse(rawData.data || rawData);
-
-      return {
-        success: true,
-        data: transformedData,
-        total: transformedData.length
-      };
     } catch (error) {
       console.error('WelfareService.searchWelfareList error:', error);
-      throw {
+      return {
         success: false,
-        error: error.message,
+        error: error.message || '복지 검색 중 오류가 발생했습니다.',
         data: []
       };
     }
@@ -73,38 +121,53 @@ class WelfareService {
   // 복지 연령 검색 - /shinhan/bokji/age-search
   async searchWelfareByAge(ageGroupNum) {
     try {
-      if (CONFIG.useDummyData) {
-        return this.filterByAge(ageGroupNum);
+      if (CONFIG && CONFIG.useDummyData === true) {
+        console.log('더미 데이터로 연령대별 검색');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return {
+          success: true,
+          data: [
+            {
+              benefitCode: 'B001',
+              benefitName: '청년 구직활동지원금',
+              benefitCategory: '취업지원',
+              description: '청년들의 구직활동을 지원하는 프로그램입니다.',
+              eligibility: '만 18-34세 청년',
+              applicationMethod: '온라인 신청',
+              contactInfo: '02-1234-5678'
+            }
+          ]
+        };
+      } else {
+        const url = `${this.baseURL}/shinhan/bokji/age-search?ageGroupNum=${ageGroupNum}`;
+        console.log('연령대별 검색 요청 URL:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const rawData = await response.json();
+        console.log('연령대별 검색 응답:', rawData);
+        
+        const transformedData = this.transformApiResponse(rawData);
+        
+        return {
+          success: true,
+          data: transformedData
+        };
       }
-
-      const response = await fetch(`${this.baseURL}/shinhan/bokji/age-search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ageGroupNum: ageGroupNum
-        }),
-        signal: AbortSignal.timeout(this.timeout)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      const transformedData = this.transformApiResponse(rawData.data || rawData);
-
-      return {
-        success: true,
-        data: transformedData,
-        total: transformedData.length
-      };
     } catch (error) {
       console.error('WelfareService.searchWelfareByAge error:', error);
-      throw {
+      return {
         success: false,
-        error: error.message,
+        error: error.message || '연령대별 검색 중 오류가 발생했습니다.',
         data: []
       };
     }
@@ -113,42 +176,52 @@ class WelfareService {
   // 복지 혜택 상세 정보
   async getWelfareDetail(benefitCode) {
     try {
-      if (CONFIG.useDummyData) {
-        const item = welfareData.find(w => w.benefitCode === benefitCode);
-        return item ? { 
-          success: true, 
-          data: item 
-        } : { 
-          success: false, 
-          data: null,
-          error: '해당 복지 혜택을 찾을 수 없습니다.'
+      if (CONFIG && CONFIG.useDummyData === true) {
+        console.log('더미 데이터로 복지 상세 조회');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return {
+          success: true,
+          data: {
+            benefitCode: benefitCode,
+            benefitName: '청년 구직활동지원금',
+            benefitCategory: '취업지원',
+            description: '청년들의 구직활동을 지원하는 프로그램입니다.',
+            eligibility: '만 18-34세 청년',
+            applicationMethod: '온라인 신청',
+            contactInfo: '02-1234-5678',
+            supportAmount: '월 50만원',
+            applicationPeriod: '상시 신청',
+            requiredDocuments: ['신분증', '소득증빙서류', '구직활동증명서']
+          }
+        };
+      } else {
+        const url = `${this.baseURL}/shinhan/bokji/detail/${benefitCode}`;
+        console.log('복지 상세 조회 요청 URL:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const rawData = await response.json();
+        console.log('복지 상세 응답:', rawData);
+        
+        return {
+          success: true,
+          data: rawData
         };
       }
-
-      const response = await fetch(`${this.baseURL}/shinhan/bokji/detail/${benefitCode}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(this.timeout)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const rawData = await response.json();
-      const transformedData = this.transformApiResponse([rawData.data || rawData]);
-
-      return {
-        success: true,
-        data: transformedData[0] || null
-      };
     } catch (error) {
       console.error('WelfareService.getWelfareDetail error:', error);
-      throw {
+      return {
         success: false,
-        error: error.message,
+        error: error.message || '복지 상세 조회 중 오류가 발생했습니다.',
         data: null
       };
     }

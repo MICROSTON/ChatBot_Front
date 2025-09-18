@@ -21,7 +21,6 @@ import { useWelfare } from '../../context/WelfareContext';
 import AgeButtons from './AgeButtons';
 import WelfareButtons from './WelfareButtons';
 import WelfareCard from './WelfareCard';
-import { welfareData } from '../../../config/dummyWelfareData';
 
 const BG = require('../../../assets/images/background.png');
 const MASCOT = require('../../../assets/images/mascot.png');
@@ -32,7 +31,7 @@ const SEND_ICON = require('../../../assets/images/click.png');
 const HEADER_TOP = Platform.OS === 'ios' ? 60 : 40;
 const HEADER_HEIGHT = HEADER_TOP + 8 + 40;
 
-export default function ChatScreen() {
+export default function ChatScreen({ route }) {
   const navigation = useNavigation();
   const [selectedAgeGroup, setSelectedAgeGroup] = useState(null);
   const [selectedBenefitCategory, setSelectedBenefitCategory] = useState(null);
@@ -59,16 +58,92 @@ export default function ChatScreen() {
     filteredList, 
     loading, 
     error,
+    hasMore,
     searchWelfareList,
-    searchWelfareByAge 
+    searchWelfareByAge,
+    loadMoreWelfare
   } = useWelfare();
+
+  // 푸시 알림으로 인한 자동 연령대 선택 처리
+  useEffect(() => {
+    if (route.params?.selectedAgeGroup) {
+      const ageGroupNum = route.params.selectedAgeGroup;
+      console.log('푸시 알림으로 인한 자동 연령대 선택:', ageGroupNum);
+      
+      // 연령대 정보 찾기
+      const ageGroups = [
+        { ageGroupNum: 1, label: '임산부/여자' },
+        { ageGroupNum: 2, label: '영유아' },
+        { ageGroupNum: 3, label: '청소년' },
+        { ageGroupNum: 4, label: '청년' },
+        { ageGroupNum: 5, label: '중장년' },
+        { ageGroupNum: 6, label: '어르신' },
+        { ageGroupNum: 7, label: '장애인' },
+      ];
+      
+      const selectedAge = ageGroups.find(age => age.ageGroupNum === ageGroupNum);
+      if (selectedAge) {
+        setSelectedAgeGroup(selectedAge);
+        setShowAgeButtons(false);
+        setShowCategoryButtons(true);
+        setHasUserMadeFirstSelection(true);
+        
+        // 봇 메시지 추가
+        setChatMessages([{
+          from: 'bot',
+          text: `${selectedAge.label} 연령대를 선택하셨습니다. 어떤 분야의 복지 정보를 찾고 계신가요?`
+        }]);
+      }
+    }
+  }, [route.params?.selectedAgeGroup]);
+
+  // 카테고리 선택 후 복지 목록이 로드되면 메시지 추가
+  useEffect(() => {
+    if (selectedBenefitCategory && !loading) {
+      // 이미 메시지가 추가되었는지 확인
+      const hasWelfareMessage = chatMessages.some(msg => 
+        msg.type === 'welfare_list' && 
+        msg.ageGroupNum === selectedAgeGroup?.ageGroupNum &&
+        msg.benefitCategoryNum === selectedBenefitCategory.benefitCategoryNum
+      );
+      
+      const hasNoWelfareMessage = chatMessages.some(msg => 
+        msg.text && msg.text.includes('현재 지원되는 복지 혜택이 없습니다') &&
+        msg.from === 'bot'
+      );
+      
+      if (!hasWelfareMessage && !hasNoWelfareMessage) {
+        if (filteredList && filteredList.length > 0) {
+          setChatMessages(prev => [...prev, { 
+            from: 'bot', 
+            text: `${selectedAgeGroup?.label}의 ${selectedBenefitCategory.name || '선택한'} 분야의 복지 혜택을 찾았습니다!` 
+          }]);
+          
+          setTimeout(() => {
+            setChatMessages(prev => [...prev, {
+              from: 'bot',
+              type: 'welfare_list',
+              data: filteredList,
+              ageGroupNum: selectedAgeGroup?.ageGroupNum,
+              benefitCategoryNum: selectedBenefitCategory.benefitCategoryNum
+            }]);
+          }, 500);
+        } else {
+          setChatMessages(prev => [...prev, { 
+            from: 'bot', 
+            text: `${selectedAgeGroup?.label}의 ${selectedBenefitCategory.name || '선택한'} 분야에는 현재 지원되는 복지 혜택이 없습니다.` 
+          }]);
+        }
+      }
+    }
+  }, [filteredList, selectedBenefitCategory, selectedAgeGroup, loading]);
 
   const intro = [
     '연령대나 상황에 따라 받을 수 있는 맞춤형 복지 혜택을 알려드릴게요.',
     '먼저, 어떤 대상에 해당하시는지 선택해주세요.',
   ];
 
-  // 연령대 버튼 텍스트 목록 (DB 스키마에 맞게 수정)
+  // 연령대 버트 텍스트 목록 (DB 스키마에 맞게 수정)
   const ageButtonTexts = [
   { text: '임산부/여성 복지', ageGroupNum: 1, label: '임산부/여성' },  // 🔥 임산부+여성 합침
   { text: '영유아 복지', ageGroupNum: 2, label: '영유아' },           // 🔥 영유아+아동 합침
@@ -98,7 +173,7 @@ export default function ChatScreen() {
     Linking.openURL(`tel:${phoneNumber}`);
   };
 
-  // 연령대 선택 핸들러 (DB 스키마 적용)
+  // 연령대 선택 핸들러 (백엔드 구조 적용)
   const onSelectAgeGroup = async (ageObj) => {
     setHasUserMadeFirstSelection(true);
 
@@ -136,62 +211,65 @@ export default function ChatScreen() {
       }, 200);
     }, 500);
 
-    // API 호출 (DB 스키마 적용)
+    // API 호출 (백엔드 구조에 맞게 수정)
     try {
-      await searchWelfareByAge(ageObj.ageGroupNum);
+      const result = await searchWelfareByAge(ageObj.ageGroupNum);
+      console.log('연령대별 검색 결과:', result);
+      
+      // 백엔드에서 카테고리 목록을 반환하므로 이를 저장
+      if (result && result.success && result.data) {
+        // 카테고리 정보를 저장하여 나중에 사용
+        setSelectedAgeGroup(prev => ({
+          ...prev,
+          categories: result.data
+        }));
+      }
     } catch (error) {
       console.error('연령대별 복지 검색 실패:', error);
+      // 오류 발생 시 기본 카테고리 사용
+      setSelectedAgeGroup(prev => ({
+        ...prev,
+        categories: [
+          { benefitCategoryNum: 10, categoryName: '경제' },
+          { benefitCategoryNum: 20, categoryName: '의료' },
+          { benefitCategoryNum: 30, categoryName: '문화시설' },
+          { benefitCategoryNum: 40, categoryName: '교육' },
+          { benefitCategoryNum: 50, categoryName: '기타' }
+        ]
+      }));
     }
   };
 
-  // 카테고리 선택 핸들러 (DB 스키마 적용)
+  // 카테고리 선택 핸들러 (백엔드 구조 적용)
   const onSelectCategory = async (categoryObj) => {
     setSelectedBenefitCategory(categoryObj);
     setSelectedBenefits([]);
 
     // 사용자 메시지 추가
-    setChatMessages(prev => [...prev, { from: 'user', text: categoryObj.name }]);
+    setChatMessages(prev => [...prev, { from: 'user', text: categoryObj.name || '카테고리' }]);
     
-    // 봇 응답 메시지 추가
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { 
-        from: 'bot', 
-        text: `${selectedAgeGroup?.label}의 ${categoryObj.name} 분야의 복지 혜택을 찾았습니다!` 
-      }]);
-
-      setTimeout(async () => {
-        try {
-          await searchWelfareList({
-            ageGroupNum: selectedAgeGroup?.ageGroupNum,
-            benefitCategoryNum: categoryObj.benefitCategoryNum
-          });
-          
-          setChatMessages(prev => [...prev, {
-            from: 'bot',
-            type: 'welfare_list',
-            data: filteredList,
-            ageGroupNum: selectedAgeGroup?.ageGroupNum,
-            benefitCategoryNum: categoryObj.benefitCategoryNum
-          }]);
-          
-        } catch (error) {
-          console.error('복지 목록 검색 실패:', error);
-        }
-      }, 1000);
-    }, 800);
+    // 복지 목록 검색
+    try {
+      await searchWelfareList({
+        ageGroupNum: selectedAgeGroup?.ageGroupNum,
+        benefitCategoryNum: categoryObj.benefitCategoryNum
+      });
+    } catch (error) {
+      console.error('복지 목록 검색 실패:', error);
+    }
   };
 
   // 복지 선택 핸들러 (DB 스키마 적용)
   const onSelectBenefit = benefit => {
     setChatMessages(prev => [...prev, { 
       from: 'user', 
-      text: benefit.benefitName 
+      text: benefit.benefitName || '복지 혜택' 
     }]);
 
     setTimeout(() => {
       setChatMessages(prev => [...prev, { 
         from: 'bot', 
-        text: `${benefit.benefitName}에 대한 상세 정보를 알려드릴게요!` 
+        text: `${benefit.benefitName || '선택한 복지'}에 대한 상세 정보를 알려드릴게요!` 
       }]);
       
       setTimeout(() => {
@@ -204,12 +282,31 @@ export default function ChatScreen() {
     }, 600);
   };
 
-  // 더보기 버튼 클릭 핸들러
-  const handleShowMore = (messageKey) => {
-    setVisibleCounts(prev => ({
-      ...prev,
-      [messageKey]: (prev[messageKey] || 3) + 3
-    }));
+  // 더보기 버튼 클릭 핸들러 (페이지네이션 적용)
+  const handleShowMore = async (messageKey) => {
+    if (!hasMore || loading) return;
+    
+    try {
+      // 현재 메시지에서 검색 파라미터 추출
+      const messageIndex = parseInt(messageKey.split('-').pop());
+      const message = chatMessages[messageIndex];
+      
+      if (message && message.type === 'welfare_list') {
+        await loadMoreWelfare({
+          ageGroupNum: message.ageGroupNum,
+          benefitCategoryNum: message.benefitCategoryNum
+        });
+        
+        // 메시지의 데이터를 업데이트
+        setChatMessages(prev => prev.map((msg, idx) => 
+          idx === messageIndex 
+            ? { ...msg, data: filteredList }
+            : msg
+        ));
+      }
+    } catch (error) {
+      console.error('더보기 로드 실패:', error);
+    }
   };
 
   // 검색어 입력 시 연관검색어 생성 (DB 스키마 적용)
@@ -233,14 +330,9 @@ export default function ChatScreen() {
   const uniqueAgeButtons = matchingAgeButtons.filter((item, index, self) => 
     index === self.findIndex(t => t.ageGroupNum === item.ageGroupNum)
   );
-  
-  // 2. 복지 이름 검색
-  const matchingWelfare = welfareData.filter(item =>
-    item.benefitName.includes(text)
-  );
 
-  // 3. 연령대 버튼 추가 (최대 2개, 중복 제거됨)
-  uniqueAgeButtons.slice(0, 2).forEach(ageButton => {
+  // 2. 연령대 버튼 추가 (최대 4개, 중복 제거됨)
+  uniqueAgeButtons.slice(0, 4).forEach(ageButton => {
     suggestions.push({
       type: 'age_group',
       text: ageButton.text,
@@ -248,16 +340,7 @@ export default function ChatScreen() {
     });
   });
 
-  // 4. 복지 이름들 추가 (최대 2개)
-  matchingWelfare.slice(0, 2).forEach(welfare => {
-    suggestions.push({
-      type: 'welfare',
-      text: welfare.benefitName,
-      data: welfare
-    });
-  });
-
-    // 5. 최대 4개까지만 표시
+    // 3. 최대 4개까지만 표시
     setSearchSuggestions(suggestions.slice(0, 4));
   setShowSuggestions(suggestions.length > 0);
 };
@@ -271,10 +354,6 @@ const handleSuggestionSelect = (suggestion) => {
         ageGroupNum: suggestion.data.ageGroupNum,
         label: suggestion.data.label
       });
-    } else if (suggestion.type === 'welfare') {
-      setTextInput('');
-      setShowSuggestions(false);
-      onSelectBenefit(suggestion.data);
     }
   };
 
@@ -341,23 +420,36 @@ const handleSuggestionSelect = (suggestion) => {
   // 카테고리 버튼 렌더링
   const renderCategoryButtons = (message, index) => (
     <View key={index} style={styles.buttonsContainer}>
-      <WelfareButtons onSelect={onSelectCategory} />
+      <WelfareButtons 
+        onSelect={onSelectCategory} 
+        customCategories={selectedAgeGroup?.categories}
+      />
     </View>
   );
 
-  // 복지 리스트 렌더링 (DB 스키마 적용)
+  // 복지 리스트 렌더링 (페이지네이션 적용)
   const renderWelfareListMessage = (message, index) => {
     const messageKey = `welfare-list-${index}`;
-    const visibleCount = visibleCounts[messageKey] || 3;
-    const totalItems = message.data ? message.data.length : 0;
-    const visibleItems = message.data ? message.data.slice(0, visibleCount) : [];
-    const hasMore = totalItems > visibleCount;
+    const welfareData = message.data || filteredList;
+
+    // 데이터가 없거나 빈 배열인 경우 처리
+    if (!welfareData || welfareData.length === 0) {
+      return (
+        <View key={index} style={styles.welfareListContainer}>
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>
+              해당 조건에 맞는 복지 혜택이 없습니다.
+            </Text>
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View key={index} style={styles.welfareListContainer}>
-        {visibleItems.map(benefit => (
+        {welfareData.map((benefit, benefitIndex) => (
           <WelfareCard
-            key={benefit.benefitCode}
+            key={benefit.benefitCode || `benefit-${index}-${benefitIndex}`}
             item={benefit}
             onPress={() => onSelectBenefit(benefit)}
           />
@@ -367,9 +459,12 @@ const handleSuggestionSelect = (suggestion) => {
           <TouchableOpacity 
             style={styles.showMoreButton}
             onPress={() => handleShowMore(messageKey)}
+            disabled={loading}
           >
             <View style={styles.showMoreContent}>
-              <Text style={styles.showMoreText}>+</Text>
+              <Text style={styles.showMoreText}>
+                {loading ? '로딩 중...' : '더보기'}
+              </Text>
             </View>
           </TouchableOpacity>
         )}
@@ -385,27 +480,70 @@ const handleSuggestionSelect = (suggestion) => {
     return (
       <View key={index} style={styles.detailOuter}>
         <View style={styles.detailHeader}>
-          <Text style={styles.detailTitle}>{benefit.benefitName}</Text>
+          <Text style={styles.detailTitle}>{benefit.benefitName || '복지 혜택'}</Text>
           <TouchableOpacity 
-          onPress={() => toggleLike(benefit)}
-          disabled={likeLoading} // 🔥 로딩 중 비활성화
-        >
-          <FontAwesome
-            name={isLiked ? 'heart' : 'heart-o'}
-            size={24}
-            color={isLiked ? '#FF3366' : '#fff'}
-            style={{ opacity: likeLoading ? 0.5 : 1 }} // 🔥 로딩 중 투명도
-          />
-        </TouchableOpacity>
+            onPress={() => toggleLike(benefit)}
+            disabled={likeLoading}
+          >
+            <FontAwesome
+              name={isLiked ? 'heart' : 'heart-o'}
+              size={24}
+              color={isLiked ? '#FF3366' : '#fff'}
+              style={{ opacity: likeLoading ? 0.5 : 1 }}
+            />
+          </TouchableOpacity>
         </View>
+        
         <View style={styles.detailBubble}>
-          <Text style={styles.detailText}>{benefit.benefitContext}</Text>
+          <Text style={styles.detailText}>{benefit.benefitContext || '상세 정보가 없습니다.'}</Text>
+          
+                      {benefit.benefitCondition && (
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>신청 조건</Text>
+                <Text style={styles.detailSectionText}>{benefit.benefitCondition || '조건 정보가 없습니다.'}</Text>
+              </View>
+            )}
+          
+          {benefit.benefitStartDate && benefit.benefitEndDate && (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>지원 기간</Text>
+              <Text style={styles.detailSectionText}>
+                {benefit.benefitStartDate} ~ {benefit.benefitEndDate}
+              </Text>
+            </View>
+          )}
+          
+          {benefit.benefitUrl && (
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>자세한 정보</Text>
+              <TouchableOpacity 
+                style={styles.linkButton}
+                onPress={async () => {
+                  try {
+                    const supported = await Linking.canOpenURL(benefit.benefitUrl);
+                    if (supported) {
+                      await Linking.openURL(benefit.benefitUrl);
+                    } else {
+                      console.log('링크를 열 수 없습니다:', benefit.benefitUrl);
+                      // 사용자에게 알림을 주거나 대체 동작 수행
+                    }
+                  } catch (error) {
+                    console.error('링크 열기 실패:', error);
+                  }
+                }}
+              >
+                <Text style={styles.linkText}>공식 사이트 방문하기</Text>
+                <Ionicons name="open-outline" size={16} color="#55B7B5" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
+        
         {likeError && (
-        <View style={styles.likeErrorContainer}>
-          <Text style={styles.likeErrorText}>{likeError}</Text>
-        </View>
-      )}
+          <View style={styles.likeErrorContainer}>
+            <Text style={styles.likeErrorText}>{likeError}</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -741,6 +879,19 @@ const styles = StyleSheet.create({
     maxWidth: '75%',
     marginTop: 8,
   },
+  noDataContainer: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
 
   showMoreButton: {
     alignItems: 'center',
@@ -748,21 +899,21 @@ const styles = StyleSheet.create({
   },
   
   showMoreContent: {
-    backgroundColor: '#98ABAD',
+    backgroundColor: '#55B7B5',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#637D85',
+    borderColor: '#447473',
     width: '100%',
-    height: 50,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
   },
   
   showMoreText: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#666',
+    color: '#FFFFFF',
   },
 
   loadingContainer: {
@@ -787,15 +938,69 @@ const styles = StyleSheet.create({
   detailOuter: { 
     backgroundColor: '#55B7B5', 
     borderRadius: 16, 
-    padding: 12, 
+    padding: 16, 
     marginBottom: 12,
     marginLeft: 40,
     width: '87%',
   },
-  detailHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  detailTitle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-  detailBubble: { backgroundColor: '#C9EAEC', borderRadius: 12, padding: 12, marginTop: 12 },
-  detailText: { fontSize: 14, color: '#000', lineHeight: 20 },
+  detailHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  detailTitle: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    color: '#fff',
+    flex: 1,
+    marginRight: 12,
+  },
+  detailBubble: { 
+    backgroundColor: '#C9EAEC', 
+    borderRadius: 12, 
+    padding: 16, 
+    marginTop: 8,
+  },
+  detailText: { 
+    fontSize: 15, 
+    color: '#000', 
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  detailSection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#B8D8D6',
+  },
+  detailSectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#447473',
+    marginBottom: 6,
+  },
+  detailSectionText: {
+    fontSize: 13,
+    color: '#333',
+    lineHeight: 18,
+  },
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#55B7B5',
+  },
+  linkText: {
+    fontSize: 13,
+    color: '#55B7B5',
+    fontWeight: '600',
+    marginRight: 6,
+  },
 
   inputBar: { 
     flexDirection: 'row', 

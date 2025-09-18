@@ -3,26 +3,21 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,
 import { updateProfile } from '../../services/UserService';
 
 export default function EditProfileScreen({ navigation, route }) {
-  const { profile, userNum } = route.params;
+  const { profile, userNum } = route.params || {};
+
+  // profile이 없으면 이전 화면으로 돌아가기
+  if (!profile) {
+    navigation.goBack();
+    return null;
+  }
 
   // 변수명 백엔드와 맞춤
   const [name, setName] = useState(profile.name || '');
   const [phone, setPhone] = useState(profile.phone || '');
   const [birth, setBirth] = useState(profile.birth || '');
-  const [homeMember, setHomeMember] = useState(profile.homeMember || '');
-  const [income, setIncome] = useState(profile.income || '');
-  const [address, setAddress] = useState(profile.address || '');
-
-  // 주소 분리
-  const [province, setProvince] = useState(address.split(' ')[0] || '');
-  const [city, setCity] = useState(address.split(' ')[1] || '');
-
-  // 모달 상태
-  const [incomeModalVisible, setIncomeModalVisible] = useState(false);
-  const [provinceModalVisible, setProvinceModalVisible] = useState(false);
-  const [cityModalVisible, setCityModalVisible] = useState(false);
-
-  // 중위소득 옵션
+  const [homeMember, setHomeMember] = useState(profile.homeMember ? profile.homeMember.toString() : '');
+  
+  // 중위소득 옵션 (먼저 정의)
   const incomeOptions = [
     { label: '50% 이하', value: '1' },
     { label: '60%', value: '2' },
@@ -51,6 +46,25 @@ export default function EditProfileScreen({ navigation, route }) {
     { label: '290%', value: '26' },
     { label: '300% 이상', value: '27' },
   ];
+
+  // income 값을 라벨로 변환하여 표시
+  const getIncomeLabel = (incomeValue) => {
+    const option = incomeOptions.find(opt => opt.value === incomeValue?.toString());
+    return option ? option.label : '';
+  };
+  const [income, setIncome] = useState(getIncomeLabel(profile.income) || '');
+  
+  const [address, setAddress] = useState(profile.address || '');
+
+  // 주소 분리 (안전성 검사 추가)
+  const addressParts = address ? address.split(' ') : ['', ''];
+  const [province, setProvince] = useState(addressParts[0] || '');
+  const [city, setCity] = useState(addressParts[1] || '');
+
+  // 모달 상태
+  const [incomeModalVisible, setIncomeModalVisible] = useState(false);
+  const [provinceModalVisible, setProvinceModalVisible] = useState(false);
+  const [cityModalVisible, setCityModalVisible] = useState(false);
 
   // 시/도 옵션
   const provinceOptions = [
@@ -130,19 +144,71 @@ export default function EditProfileScreen({ navigation, route }) {
   );
 
   const handleSave = async () => {
+    // 입력 검증
+    if (!name.trim()) {
+      Alert.alert('오류', '이름을 입력해주세요.');
+      return;
+    }
+    if (!phone.trim()) {
+      Alert.alert('오류', '전화번호를 입력해주세요.');
+      return;
+    }
+    if (!birth.trim()) {
+      Alert.alert('오류', '생년월일을 입력해주세요.');
+      return;
+    }
+    if (!homeMember.trim()) {
+      Alert.alert('오류', '가구원 수를 입력해주세요.');
+      return;
+    }
+    
+    // 가구원수 검증 (1명 이상)
+    const homeMemberNum = parseInt(homeMember);
+    if (isNaN(homeMemberNum) || homeMemberNum < 1) {
+      Alert.alert('오류', '가구원 수는 1명 이상이어야 합니다.');
+      return;
+    }
+    
+    if (!income) {
+      Alert.alert('오류', '중위소득을 선택해주세요.');
+      return;
+    }
+    if (!province || !city) {
+      Alert.alert('오류', '주소를 선택해주세요.');
+      return;
+    }
+
+    // income 값을 숫자로 변환
+    const incomeValue = incomeOptions.find(option => option.label === income)?.value;
+    
     const updated = {
-      name,
-      phone,
-      birth,
-      homeMember,
-      income,
+      name: name.trim(),
+      phone: phone.trim(),
+      birth: birth.trim(),
+      homeMember: homeMemberNum,
+      income: parseInt(incomeValue) || 0,
       address: `${province} ${city}`,
     };
+    
     try {
-      await updateProfile(userNum, updated);
-      Alert.alert('수정 완료', '프로필이 수정되었습니다.', [
-        { text: '확인', onPress: () => navigation.navigate('Profile', { profile: updated, userNum }) }
-      ]);
+      // userNum을 숫자로 변환
+      const numericUserNum = parseInt(userNum);
+      if (isNaN(numericUserNum)) {
+        Alert.alert('오류', '사용자 번호가 올바르지 않습니다.');
+        return;
+      }
+      
+      console.log('프로필 수정 요청 - userNum:', numericUserNum, 'data:', updated);
+      const result = await updateProfile(numericUserNum, updated);
+      console.log('프로필 수정 결과:', result);
+      
+      if (result.success) {
+        Alert.alert('수정 완료', '프로필이 수정되었습니다.', [
+          { text: '확인', onPress: () => navigation.navigate('Profile', { profile: updated, userNum: numericUserNum }) }
+        ]);
+      } else {
+        Alert.alert('오류', result.message || result.error || '프로필 수정에 실패했습니다.');
+      }
     } catch(error) {
       console.log('프로필 수정 에러:', error);
       Alert.alert('오류', error.message || '프로필 수정에 실패했습니다.');

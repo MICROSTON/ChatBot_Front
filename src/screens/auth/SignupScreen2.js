@@ -242,7 +242,7 @@ const SignupScreen2 = ({ navigation, route }) => {
             <Text style={styles.label}>*중위소득</Text>
             {renderSelector(
               '중위소득', 
-              income ? incomeOptions.find(option => option.value === income)?.label || `${income}분위` : '',
+              income ? incomeOptions.find(option => option.value === income)?.label || '' : '',
               '중위소득을 선택하세요', 
               () => !isLoading && setIncomeModalVisible(true),
               isLoading

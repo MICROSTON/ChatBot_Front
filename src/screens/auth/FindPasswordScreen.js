@@ -18,7 +18,7 @@ const FindPasswordScreen = ({ navigation }) => {
       return;
     }
     const result = await findPassword(id.trim(), phone.trim());
-    if (result.success) {
+    if (result.success && (result.data?.password || result.data?.pw)) {
       navigation.navigate('FindResult', {
         type: 'password',
         result: result.data?.password || result.data?.pw, // password 또는 pw 둘 다 지원

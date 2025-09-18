@@ -1,5 +1,5 @@
 export const welfareData = [
-  // 임산부(1) + 경제(1) - 3개
+  // 임산부(1) + 경제(10) - 3개
   {
     benefitCode: 1,
     benefitName: "임산부 출산지원금",
@@ -9,7 +9,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/pregnancy-money",
     benefitCondition: "임신 확인서 제출 필요",
     ageGroupNum: 1,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
   {
@@ -21,7 +21,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/women-startup",
     benefitCondition: "사업계획서 제출 필요",
     ageGroupNum: 1,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
   {
@@ -33,11 +33,11 @@ export const welfareData = [
     benefitUrl: "https://example.com/pregnancy-living",
     benefitCondition: "소득 기준 충족 필요",
     ageGroupNum: 1,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
 
-  // 임산부(1) + 의료(2) - 3개
+  // 임산부(1) + 의료(20) - 3개
   {
     benefitCode: 4,
     benefitName: "임산부 건강관리 지원",
@@ -47,7 +47,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/pregnancy-health",
     benefitCondition: "임신 확인서 제출 필요",
     ageGroupNum: 1,
-    benefitCategoryNum: 2,
+    benefitCategoryNum: 20,
     localNum: 1
   },
   {
@@ -59,7 +59,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/pregnancy-checkup",
     benefitCondition: "임신 14주 이후부터 신청 가능",
     ageGroupNum: 1,
-    benefitCategoryNum: 2,
+    benefitCategoryNum: 20,
     localNum: 1
   },
   {
@@ -71,11 +71,11 @@ export const welfareData = [
     benefitUrl: "https://example.com/high-risk-pregnancy",
     benefitCondition: "의사 진단서 필요",
     ageGroupNum: 1,
-    benefitCategoryNum: 2,
+    benefitCategoryNum: 20,
     localNum: 1
   },
 
-  // 영유아(2) + 교육(3) - 3개
+  // 영유아(2) + 교육(40) - 3개
   {
     benefitCode: 7,
     benefitName: "영유아 보육료 지원",
@@ -85,7 +85,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/childcare",
     benefitCondition: "주민등록상 거주지 확인",
     ageGroupNum: 2,
-    benefitCategoryNum: 3,
+    benefitCategoryNum: 40,
     localNum: 1
   },
   {
@@ -97,7 +97,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/kindergarten",
     benefitCondition: "유치원 재원생 대상",
     ageGroupNum: 2,
-    benefitCategoryNum: 3,
+    benefitCategoryNum: 40,
     localNum: 1
   },
   {
@@ -113,7 +113,7 @@ export const welfareData = [
     localNum: 1
   },
 
-  // 청년(4) + 경제(1) - 3개
+  // 청년(4) + 경제(10) - 3개
   {
     benefitCode: 10,
     benefitName: "청년 취업성공패키지",
@@ -123,7 +123,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/youth-job",
     benefitCondition: "구직등록 및 상담 필수",
     ageGroupNum: 4,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
   {
@@ -135,7 +135,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/youth-housing",
     benefitCondition: "만 19~39세, 무주택자",
     ageGroupNum: 4,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
   {
@@ -147,10 +147,10 @@ export const welfareData = [
     benefitUrl: "https://example.com/youth-savings",
     benefitCondition: "중소기업 취업자, 만 15~34세",
     ageGroupNum: 4,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
-  // 청년(4) + 교육(3) - 3개
+  // 청년(4) + 교육(40) - 3개
   {
     benefitCode: 13,
     benefitName: "청년 직업훈련 지원",
@@ -160,7 +160,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/youth-training",
     benefitCondition: "만 18~34세, 미취업자",
     ageGroupNum: 4,
-    benefitCategoryNum: 3,
+    benefitCategoryNum: 40,
     localNum: 1
   },
   {
@@ -172,7 +172,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/youth-overseas",
     benefitCondition: "대학생 또는 졸업 후 2년 이내",
     ageGroupNum: 4,
-    benefitCategoryNum: 3,
+    benefitCategoryNum: 40,
     localNum: 1
   },
   {
@@ -184,11 +184,11 @@ export const welfareData = [
     benefitUrl: "https://example.com/youth-startup-edu",
     benefitCondition: "만 18~39세, 예비창업자",
     ageGroupNum: 4,
-    benefitCategoryNum: 3,
+    benefitCategoryNum: 40,
     localNum: 1
   },
 
-  // 어르신(6) + 경제(1) - 3개
+  // 어르신(6) + 경제(10) - 3개
   {
     benefitCode: 16,
     benefitName: "기초연금 지급",
@@ -198,7 +198,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/basic-pension",
     benefitCondition: "만 65세 이상, 소득·재산 기준 충족",
     ageGroupNum: 6,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
   {
@@ -210,7 +210,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/senior-job",
     benefitCondition: "만 65세 이상",
     ageGroupNum: 6,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
   {
@@ -222,11 +222,11 @@ export const welfareData = [
     benefitUrl: "https://example.com/basic-living",
     benefitCondition: "소득·재산 조사 후 선정",
     ageGroupNum: 6,
-    benefitCategoryNum: 1,
+    benefitCategoryNum: 10,
     localNum: 1
   },
 
-  // 어르신(6) + 의료(2) - 3개
+  // 어르신(6) + 의료(20) - 3개
   {
     benefitCode: 19,
     benefitName: "어르신 의료비 지원",
@@ -236,7 +236,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/senior-medical",
     benefitCondition: "만 65세 이상",
     ageGroupNum: 6,
-    benefitCategoryNum: 2,
+    benefitCategoryNum: 20,
     localNum: 1
   },
   {
@@ -248,7 +248,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/long-term-care",
     benefitCondition: "장기요양등급 인정자",
     ageGroupNum: 6,
-    benefitCategoryNum: 2,
+    benefitCategoryNum: 20,
     localNum: 1
   },
   {
@@ -260,7 +260,7 @@ export const welfareData = [
     benefitUrl: "https://example.com/dementia-checkup",
     benefitCondition: "만 60세 이상",
     ageGroupNum: 6,
-    benefitCategoryNum: 2,
+    benefitCategoryNum: 20,
     localNum: 1
   }
 ];

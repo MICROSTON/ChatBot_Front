@@ -18,11 +18,11 @@ const FindIdScreen = ({ navigation }) => {
       return;
     }
     const result = await findId(name.trim(), phone.trim());
-    if (result.success) {
+    if (result.success && result.data?.id) {
       navigation.navigate('FindResult', {
         type: 'id',
-        result: result.data?.id,
-        message: result.data?.message || '아이디를 찾았습니다.'
+        result: result.data.id,
+        message: result.data.message || '아이디를 찾았습니다.'
       });
     } else {
       Alert.alert('알림', result.message || '입력하신 정보와 일치하는 사용자가 없습니다.');

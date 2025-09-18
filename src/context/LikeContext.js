@@ -1,13 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import LikeService from '../services/LikeService';
+import { AuthContext } from './AuthContext';
 
 const LikeContext = createContext();
 
 export const LikeProvider = ({ children }) => {
   const [likedBenefits, setLikedBenefits] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(1); // 기본값
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null); // 🔥 항상 null 또는 문자열
+  const { userInfo } = useContext(AuthContext); // AuthContext에서 사용자 정보 가져오기
 
   // 🔥 안전한 에러 설정 헬퍼 함수
   const setSafeError = (errorValue) => {
@@ -34,6 +35,8 @@ export const LikeProvider = ({ children }) => {
 
   // 좋아요 추가
   const addLike = async (benefit) => {
+    const currentUserId = userInfo?.id; // 백엔드에서는 사용자 ID를 사용해야 함
+    
     if (!currentUserId) {
       setSafeError('사용자 정보가 없습니다.');
       return;
@@ -66,6 +69,8 @@ export const LikeProvider = ({ children }) => {
 
   // 좋아요 제거 - LikeService.removeLike와 통일
   const removeLike = async (benefit) => {
+    const currentUserId = userInfo?.id; // 백엔드에서는 사용자 ID를 사용해야 함
+    
     if (!currentUserId) {
       setSafeError('사용자 정보가 없습니다.');
       return;
@@ -108,6 +113,8 @@ export const LikeProvider = ({ children }) => {
 
   // 사용자 좋아요 목록 로드
   const loadUserLikes = async () => {
+    const currentUserId = userInfo?.id; // 백엔드에서는 사용자 ID를 사용해야 함
+    
     if (!currentUserId) return;
 
     try {
@@ -129,11 +136,12 @@ export const LikeProvider = ({ children }) => {
     }
   };
 
-  const changeUser = (userId) => {
-    setCurrentUserId(userId);
-    setLikedBenefits([]);
-    setSafeError(null); // 🔥 안전한 에러 초기화
-  };
+  // 사용자 정보가 변경될 때 좋아요 목록 다시 로드
+  useEffect(() => {
+    if (userInfo?.id) {
+      loadUserLikes();
+    }
+  }, [userInfo?.id]);
 
   const clearError = () => {
     setSafeError(null); // 🔥 안전한 에러 초기화
@@ -142,7 +150,6 @@ export const LikeProvider = ({ children }) => {
   const value = {
     // 상태
     likedBenefits,
-    currentUserId,
     loading,
     error, // 🔥 항상 null 또는 string
     
@@ -152,7 +159,6 @@ export const LikeProvider = ({ children }) => {
     toggleLike,
     isLiked,
     loadUserLikes,
-    changeUser,
     clearError,
   };
 
@@ -166,7 +172,7 @@ export const LikeProvider = ({ children }) => {
 export const useLike = () => {
   const context = useContext(LikeContext);
   if (!context) {
-    throw new Error('useLike must be used within a LikeProvider');
+    throw new Error('useLike는 LikeProvider 내부에서만 사용할 수 있습니다.');
   }
   return context;
 };
