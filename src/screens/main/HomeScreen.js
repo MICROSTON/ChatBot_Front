@@ -59,8 +59,8 @@ export default function HomeScreen({ navigation, route, onShowGuide, onMount }) 
       {/* 상단에 가이드/대화하기/버튼 */}
       <View style={styles.topArea}>
         <TouchableOpacity style={styles.guideRow} onPress={onShowGuide}>
-          <Text style={styles.guideIcon}>ⓘ</Text>
-          <Text style={styles.guideText}>가이드</Text>
+          <Text style={styles.guideIcon} allowFontScaling={false}>ⓘ</Text>
+          <Text style={styles.guideText} allowFontScaling={false}>가이드</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -130,13 +130,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   guideIcon: {
-    fontSize: 18,
+    fontSize: 40,
+    lineHeight: 44,
     color: '#E3A772',
     marginRight: 6,
     marginTop: 100,
   },
   guideText: {
-    fontSize: 15,
+    fontSize: 36,
+    lineHeight: 42,
     color: '#333',
     marginTop: 100,
   },

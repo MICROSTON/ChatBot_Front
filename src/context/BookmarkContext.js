@@ -22,15 +22,13 @@ export const BookmarkProvider = ({ children }) => {
         setError(null);
 
         if (isConnected && !(CONFIG && CONFIG.useDummyData)) {
-          // 로그인된 사용자 ID 사용
-          const userId = userInfo?.id || "test_user";
+          // 로그인된 사용자 ID 사용 (테스트용으로 usertester 사용)
+          const userId = userInfo?.id || "usertester";
           console.log('북마크 조회 사용자 ID:', userId);
           
-          // userInfo가 없으면 로드하지 않음
+          // userInfo가 없으면 테스트 사용자로 진행
           if (!userInfo?.id) {
-            console.log('사용자 정보가 없어서 북마크 로드를 건너뜁니다.');
-            setLoading(false);
-            return;
+            console.log('사용자 정보가 없어서 테스트 사용자(usertester)로 진행합니다.');
           }
           
           const response = await fetchBookmarks(userId);

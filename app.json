@@ -3,12 +3,16 @@
     "name": "SHchatbot",
     "slug": "SHchatbot",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "android": {
       "package": "com.shinhan.chatbot",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [
@@ -19,14 +23,7 @@
           }
         }
       ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icons/info.png",
-          "color": "#ffffff",
-          "defaultChannel": "default"
-        }
-      ],
+      "@react-native-firebase/app",
       "expo-font"
     ],
     "extra": {
@@ -39,6 +36,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a3d87e54-80f8-4ad0-a442-d88ec31a5a5e"
     }
   }
 }

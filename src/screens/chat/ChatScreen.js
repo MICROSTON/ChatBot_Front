@@ -139,8 +139,8 @@ export default function ChatScreen({ route }) {
   }, [filteredList, selectedBenefitCategory, selectedAgeGroup, loading]);
 
   const intro = [
-    '연령대나 상황에 따라 받을 수 있는 맞춤형 복지 혜택을 알려드릴게요.',
-    '먼저, 어떤 대상에 해당하시는지 선택해주세요.',
+    '연령대나 개인별 필요한 맞춤형 복지 혜택을 알려드릴게요',
+    '필요한 복지 종류를 선택해주세요',
   ];
 
   // 연령대 버트 텍스트 목록 (DB 스키마에 맞게 수정)

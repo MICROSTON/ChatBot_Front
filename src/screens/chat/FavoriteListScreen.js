@@ -25,7 +25,7 @@ export default function FavoriteListScreen() {
       '삭제 확인',
       '좋아요를 취소하시겠습니까?',
       [
-        { text: '취소', style: 'cancel' },
+        { text: '확인', style: 'cancel' },
         { 
           text: '삭제', 
           style: 'destructive',
@@ -42,7 +42,7 @@ export default function FavoriteListScreen() {
       [
         { text: '취소', style: 'cancel' },
         { 
-          text: '취소', 
+          text: '확인', 
           style: 'destructive',
           onPress: () => removeLike(item)
         }

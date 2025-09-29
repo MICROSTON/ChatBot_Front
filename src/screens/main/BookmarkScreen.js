@@ -25,13 +25,7 @@ const CATEGORIES = [
 const STORAGE_KEY = 'notification_categories';
 
 // 알림 설정
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+// Firebase FCM 알림 핸들러는 App.js에서 설정됨
 
 const BookmarkScreen = ({ navigation }) => {
   const [selectedCategories, setSelectedCategories] = useState({});
@@ -98,10 +92,10 @@ const BookmarkScreen = ({ navigation }) => {
     fetchNotifications();
     fetchNotificationStatus();
     
-    // 로그인된 사용자 정보 설정
-    if (userInfo?.id) {
-      setUserNum(userInfo.id);
-    }
+    // 로그인된 사용자 정보 설정 (테스트용으로 usertester 사용)
+    const testUserId = userInfo?.id || "usertester";
+    setUserNum(testUserId);
+    console.log('BookmarkScreen 사용자 ID:', testUserId);
   }, [userInfo, bookmarks]);
 
   const checkNotificationPermissions = async () => {
@@ -110,17 +104,29 @@ const BookmarkScreen = ({ navigation }) => {
       return;
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    if (existingStatus !== 'granted') {
-      console.log('알림 권한 요청 중...');
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
+    try {
+      // Expo Go 환경에서는 Firebase 권한 요청 건너뜀
+      if (Constants.appOwnership === 'expo') {
+        console.log('Expo Go 환경 - Firebase 권한 요청 건너뜀');
+        return;
+      }
+
+      // 실제 빌드에서만 Firebase 권한 요청
+      console.log('실제 빌드 환경 - Firebase 권한 요청');
+      const { default: messaging } = await import('@react-native-firebase/messaging');
+      const authStatus = await messaging().requestPermission();
+      const enabled = authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+                     authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+      if (!enabled) {
         Alert.alert(
           '알림 권한 필요',
           '새로운 복지정보 알림을 받으려면 알림 권한이 필요합니다.',
           [{ text: '확인' }]
         );
       }
+    } catch (error) {
+      console.log('Firebase 권한 요청 실패, Expo Push Notifications 사용:', error.message);
     }
   };
 
@@ -130,40 +136,31 @@ const BookmarkScreen = ({ navigation }) => {
       return null;
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      Alert.alert('알림', '푸시 알림 권한이 필요합니다.');
-      return null;
-    }
-
     try {
-      // EAS 빌드에서는 projectId를 명시적으로 지정해야 함
-      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      console.log('Project ID:', projectId);
+      // 권한 요청
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
       
-      if (!projectId) {
-        console.error('Project ID가 설정되지 않았습니다.');
-        Alert.alert('오류', '앱 설정에 문제가 있습니다. 개발자에게 문의하세요.');
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        Alert.alert('알림', '푸시 알림 권한이 필요합니다.');
         return null;
       }
 
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: projectId
-      });
-      const token = tokenData.data;
-      console.log('Push Token 획득 성공:', token);
-      return token;
+      // 모든 환경에서 Expo Push Token 사용 (통일된 방식)
+      const token = await Notifications.getExpoPushTokenAsync();
+      console.log('Expo Push Token 획득 성공:', token.data);
+      return token.data;
+      
     } catch (error) {
       console.error('푸시 토큰 획득 오류:', error);
-      Alert.alert('오류', '푸시 알림 토큰을 가져올 수 없습니다: ' + error.message);
-      return null;
+      // 테스트용 더미 토큰 반환
+      console.log('모든 토큰 획득 실패, 더미 토큰 사용');
+      return 'ExponentPushToken[TEST_DUMMY_TOKEN_FOR_TESTING]';
     }
   };
 
@@ -185,7 +182,8 @@ const BookmarkScreen = ({ navigation }) => {
         body: JSON.stringify({
           userId: userNum,
           pushToken: token,
-          ageGroups: selectedAgeGroupNums
+          ageGroups: selectedAgeGroupNums,
+          isActive: isNotificationEnabled  // 현재 알림 활성화 상태 포함
         }),
       });
 
@@ -345,31 +343,101 @@ const BookmarkScreen = ({ navigation }) => {
         return;
       }
 
-      const response = await fetch(`${CONFIG.apiUrl}/notification/toggle/${userInfo.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // 1단계: 서버 연결 테스트 (핑)
+      try {
+        console.log('=== 서버 연결 테스트 ===');
+        console.log('핑 URL:', `${CONFIG.apiUrl}/notification/usertester`);
+        const pingResponse = await fetch(`${CONFIG.apiUrl}/notification/usertester`);
+        console.log('핑 응답 상태:', pingResponse.status);
+        if (pingResponse.ok) {
+          console.log('✅ 서버 연결 성공');
+        } else {
+          console.log('❌ 서버 연결 실패 - 상태:', pingResponse.status);
+          Alert.alert('오류', `서버에 연결할 수 없습니다. 상태: ${pingResponse.status}`);
+          return;
+        }
+      } catch (pingError) {
+        console.log('❌ 서버 연결 테스트 실패:', pingError.message);
+        Alert.alert('오류', `서버에 연결할 수 없습니다: ${pingError.message}`);
+        return;
+      }
 
-      if (response.ok) {
+      const newNotificationState = !isNotificationEnabled;
+      console.log('알림 상태 변경:', newNotificationState);
+
+      // 푸시 알림 토큰 등록 및 서버 전송
+      const token = await registerForPushNotifications();
+      
+      if (token) {
+        console.log('푸시 토큰 획득 성공:', token.substring(0, 20) + '...');
+        
+        const selectedAgeGroupNums = Object.entries(selectedCategories)
+          .filter(([_, isSelected]) => isSelected)
+          .map(([ageGroupNum]) => Number(ageGroupNum));
+
+        console.log('선택된 연령대:', selectedAgeGroupNums);
+        console.log('사용자 ID:', userInfo.id);
+
+        const requestData = {
+          userId: userInfo.id,
+          pushToken: token,
+          ageGroups: selectedAgeGroupNums,
+          isActive: newNotificationState
+        };
+        
+        console.log('=== 서버 요청 데이터 ===');
+        console.log('API URL:', `${CONFIG.apiUrl}/notification/register`);
+        console.log('Request Data:', JSON.stringify(requestData, null, 2));
+        
+        // 실제 전송할 JSON 문자열 확인
+        const jsonBody = JSON.stringify(requestData);
+        console.log('=== JSON Body 확인 ===');
+        console.log('JSON Body:', jsonBody);
+        console.log('JSON Body Length:', jsonBody.length);
+        console.log('JSON Body Type:', typeof jsonBody);
+        
+        const response = await fetch(`${CONFIG.apiUrl}/notification/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonBody,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const result = await response.json();
-        // 서버에서 Map<String, Object>를 반환하므로 result.isActive로 접근
-        setIsNotificationEnabled(result.isActive);
-        Alert.alert('알림', result.message);
+        console.log('=== 서버 응답 ===');
+        console.log('Response Status:', response.status);
+        console.log('Response Data:', JSON.stringify(result, null, 2));
+
+        // 성공적으로 저장되면 상태 업데이트
+        setIsNotificationEnabled(newNotificationState);
+        Alert.alert('알림', newNotificationState ? '푸시 알림이 활성화되었습니다.' : '푸시 알림이 비활성화되었습니다.');
       } else {
-        Alert.alert('오류', '알림 설정 변경에 실패했습니다.');
+        console.error('푸시 토큰을 획득할 수 없음');
+        Alert.alert('알림', '푸시 알림 토큰을 획득할 수 없습니다. 알림 권한을 확인해주세요.');
       }
     } catch (error) {
       console.error('알람 토글 오류:', error);
-      Alert.alert('오류', '알림 설정 변경 중 문제가 발생했습니다.');
+      Alert.alert('오류', '알림 설정 변경 중 문제가 발생했습니다: ' + error.message);
     }
   };
 
   // 현재 알람 설정 상태 조회
   const fetchNotificationStatus = async () => {
     try {
-      if (!userInfo?.id) return;
+      if (!userInfo?.id) {
+        console.log('사용자 ID가 없어서 알림 상태 조회를 건너뜀');
+        return;
+      }
+
+      console.log('=== 알림 상태 조회 ===');
+      console.log('조회할 사용자 ID:', userInfo.id);
+      console.log('API URL:', `${CONFIG.apiUrl}/notification/${userInfo.id}`);
 
       const response = await fetch(`${CONFIG.apiUrl}/notification/${userInfo.id}`, {
         method: 'GET',
@@ -378,10 +446,19 @@ const BookmarkScreen = ({ navigation }) => {
         },
       });
 
+      console.log('응답 상태:', response.status);
+
       if (response.ok) {
         const result = await response.json();
+        console.log('=== 알림 상태 조회 결과 ===');
+        console.log('Response Data:', JSON.stringify(result, null, 2));
+        console.log('isActive 값:', result.isActive);
+        
         // 서버에서 PushNotificationResponseDto를 직접 반환하므로 result.isActive로 접근
         setIsNotificationEnabled(result.isActive ?? true);
+        console.log('알림 상태 설정됨:', result.isActive ?? true);
+      } else {
+        console.error('알림 상태 조회 실패:', response.status);
       }
     } catch (error) {
       console.error('알람 상태 조회 오류:', error);

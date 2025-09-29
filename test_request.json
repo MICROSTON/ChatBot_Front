@@ -1,0 +1,7 @@
+{
+  "userId": "usertester",
+  "pushToken": "ExponentPushToken[TEST_TOKEN]",
+  "ageGroups": [1, 2, 3],
+  "isActive": true
+}
+
